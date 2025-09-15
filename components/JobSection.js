@@ -1,27 +1,25 @@
-// JobSection Component
+// JobSection Component - lists job posts
 const JobSection = {
     template: `
         <div class="job-section">
-            <div class="section-title">📋 可接工作</div>
+            <div class="section-title">📋 職缺列表</div>
             <div class="job-list">
                 <div 
                     v-for="job in jobs" 
                     :key="job.id"
                     class="job-item"
-                    :class="{ 
-                        'completed': job.completed, 
-                        'in-progress': job.inProgress 
-                    }"
                     @click="selectJob(job)"
                 >
                     <div class="job-info">
-                        <span>{{ job.name }}</span>
-                        <span class="job-reward">+{{ job.reward }}</span>
+                        <span>{{ job.region }}｜{{ job.storeType }}</span>
+                        <span class="job-reward">{{ job.count }}人</span>
                     </div>
-                    <div v-if="job.inProgress" class="progress-bar">
-                        <div class="progress-fill" :style="{ width: job.progress + '%' }"></div>
+                    <div class="job-info">
+                        <span>需求：{{ job.roles.join('、') }}</span>
+                        <span>{{ job.time }}</span>
                     </div>
                 </div>
+                <div v-if="jobs.length === 0" class="job-item">目前沒有符合條件的職缺</div>
             </div>
         </div>
     `,

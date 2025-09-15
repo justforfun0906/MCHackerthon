@@ -4,17 +4,17 @@ const BottomNav = {
         <div class="bottom-nav">
             <button 
                 class="nav-btn" 
-                :class="{ active: currentTab === 'jobs' }"
-                @click="switchTab('jobs')"
+                :class="{ active: currentTab === 'search' }"
+                @click="switchTab('search')"
             >
-                工作
+                找工作
             </button>
             <button 
                 class="nav-btn" 
-                :class="{ active: currentTab === 'shop' }"
-                @click="switchTab('shop')"
+                :class="{ active: currentTab === 'post' }"
+                @click="switchTab('post')"
             >
-                商店
+                發佈
             </button>
             <button 
                 class="nav-btn" 

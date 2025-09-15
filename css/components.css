@@ -158,3 +158,47 @@
     margin: 2px;
     cursor: pointer;
 }
+
+/* 表單樣式 */
+.filter-bar, .post-form {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 4px;
+}
+
+.field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 2px 0;
+}
+
+.field-row label {
+    font-size: 6px;
+    margin-right: 4px;
+}
+
+select, input[type="number"] {
+    font-size: 6px;
+    padding: 1px 2px;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.2);
+    color: white;
+}
+
+.checkbox-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.checkbox-item {
+    font-size: 6px;
+}
+
+.actions {
+    text-align: center;
+    margin-top: 4px;
+}
