@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=128, height=160, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>迷你打工</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 128px;
+            height: 160px;
+            font-family: Arial, sans-serif;
+            font-size: 8px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .app {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            color: white;
+        }
+        
+        /* 頂部狀態欄 */
+        .status-bar {
+            height: 12px;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4px;
+            font-size: 6px;
+        }
+        
+        /* 主要內容區域 */
+        .main-content {
+            flex: 1;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 用戶資訊卡 */
+        .user-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 4px;
+            margin-bottom: 4px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            font-size: 7px;
+        }
+        
+        .avatar {
+            width: 16px;
+            height: 16px;
+            background: #ffd700;
+            border-radius: 50%;
+            margin-right: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2px;
+            font-size: 6px;
+        }
+        
+        /* 工作列表 */
+        .job-section {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            padding: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .section-title {
+            font-size: 7px;
+            font-weight: bold;
+            margin-bottom: 3px;
+            text-align: center;
+        }
+        
+        .job-list {
+            max-height: 60px;
+            overflow-y: auto;
+        }
+        
+        .job-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            padding: 3px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 6px;
+        }
+        
+        .job-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .job-item.completed {
+            background: rgba(0,255,0,0.2);
+        }
+        
+        .job-item.in-progress {
+            background: rgba(255,255,0,0.2);
+        }
+        
+        .job-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .job-reward {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        /* 底部按鈕區 */
+        .bottom-nav {
+            height: 20px;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 6px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+        
+        .nav-btn.active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        /* 進度條 */
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 2px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00aaff);
+            border-radius: 2px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        
+        /* 彈窗 */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            color: black;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 7px;
+            max-width: 100px;
+        }
+        
+        .modal-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 2px;
+            font-size: 6px;
+            margin: 2px;
+            cursor: pointer;
+        }
+        
+        /* 滾動條美化 */
+        ::-webkit-scrollbar {
+            width: 2px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 1px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 狀態欄 -->
+        <div class="status-bar">
+            <span>迷你打工</span>
+            <span id="currentTime">00:00</span>
+        </div>
+        
+        <!-- 主要內容 -->
+        <div class="main-content">
+            <!-- 用戶資訊卡 -->
+            <div class="user-card">
+                <div class="user-info">
+                    <div class="avatar">🐥</div>
+                    <div>
+                        <div id="userName">新手小雞</div>
+                        <div class="stats">
+                            <span>等級: <span id="userLevel">1</span></span>
+                            <span>金幣: <span id="userCoins">50</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="expProgress"></div>
+                </div>
+            </div>
+            
+            <!-- 工作區域 -->
+            <div class="job-section">
+                <div class="section-title">📋 可接工作</div>
+                <div class="job-list" id="jobList">
+                    <!-- 工作項目將由JavaScript動態生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部導航 -->
+        <div class="bottom-nav">
+            <button class="nav-btn active" onclick="switchTab('jobs')">工作</button>
+            <button class="nav-btn" onclick="switchTab('shop')">商店</button>
+            <button class="nav-btn" onclick="switchTab('profile')">個人</button>
+        </div>
+        
+        <!-- 彈窗 -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <div id="modalTitle"></div>
+                <div id="modalMessage"></div>
+                <button class="modal-btn" onclick="confirmAction()">確認</button>
+                <button class="modal-btn" onclick="closeModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 應用程式狀態
+        let appState = {
+            currentTab: 'jobs',
+            selectedJob: null,
+            user: {
+                name: '新手小雞',
+                level: 1,
+                coins: 50,
+                exp: 25
+            },
+            jobs: [
+                { id: 1, name: '看廣告', reward: 5, time: 30, completed: false, inProgress: false, progress: 0 },
+                { id: 2, name: '簽到', reward: 10, time: 5, completed: false, inProgress: false, progress: 0 },
+                { id: 3, name: '分享', reward: 15, time: 10, completed: false, inProgress: false, progress: 0 },
+                { id: 4, name: '評分', reward: 20, time: 15, completed: false, inProgress: false, progress: 0 },
+                { id: 5, name: '邀請', reward: 50, time: 60, completed: false, inProgress: false, progress: 0 }
+            ]
+        };
+
+        // DOM元素引用
+        const elements = {
+            currentTime: document.getElementById('currentTime'),
+            userName: document.getElementById('userName'),
+            userLevel: document.getElementById('userLevel'),
+            userCoins: document.getElementById('userCoins'),
+            expProgress: document.getElementById('expProgress'),
+            jobList: document.getElementById('jobList'),
+            modal: document.getElementById('modal'),
+            modalTitle: document.getElementById('modalTitle'),
+            modalMessage: document.getElementById('modalMessage')
+        };
+
+        // 時間更新
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
+                             now.getMinutes().toString().padStart(2, '0');
+            elements.currentTime.textContent = timeString;
+        }
+
+        // 更新用戶界面
+        function updateUserInterface() {
+            elements.userName.textContent = appState.user.name;
+            elements.userLevel.textContent = appState.user.level;
+            elements.userCoins.textContent = appState.user.coins;
+            elements.expProgress.style.width = appState.user.exp + '%';
+        }
+
+        // 渲染工作列表
+        function renderJobList() {
+            elements.jobList.innerHTML = '';
+            appState.jobs.forEach(job => {
+                const jobElement = document.createElement('div');
+                jobElement.className = 'job-item';
+                if (job.completed) jobElement.classList.add('completed');
+                if (job.inProgress) jobElement.classList.add('in-progress');
+                
+                jobElement.innerHTML = `
+                    <div class="job-info">
+                        <span>${job.name}</span>
+                        <span class="job-reward">+${job.reward}</span>
+                    </div>
+                    ${job.inProgress ? `<div class="progress-bar">
+                        <div class="progress-fill" style="width: ${job.progress}%"></div>
+                    </div>` : ''}
+                `;
+                
+                jobElement.addEventListener('click', () => selectJob(job));
+                elements.jobList.appendChild(jobElement);
+            });
+        }
+
+        // 選擇工作
+        function selectJob(job) {
+            if (job.completed) return;
+            
+            appState.selectedJob = job;
+            elements.modalTitle.textContent = job.name;
+            elements.modalMessage.textContent = `獲得 ${job.reward} 金幣\n預估 ${job.time} 秒`;
+            showModal();
+        }
+
+        // 顯示彈窗
+        function showModal() {
+            elements.modal.classList.add('show');
+        }
+
+        // 關閉彈窗
+        function closeModal() {
+            elements.modal.classList.remove('show');
+        }
+
+        // 確認操作
+        function confirmAction() {
+            if (appState.selectedJob && !appState.selectedJob.inProgress) {
+                appState.selectedJob.inProgress = true;
+                appState.selectedJob.progress = 0;
+                renderJobList();
+            }
+            closeModal();
+        }
+
+        // 切換標籤
+        function switchTab(tab) {
+            appState.currentTab = tab;
+            const navBtns = document.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // 工作進度更新
+        function updateJobProgress() {
+            let hasUpdates = false;
+            appState.jobs.forEach(job => {
+                if (job.inProgress && !job.completed) {
+                    job.progress += Math.random() * 10;
+                    if (job.progress >= 100) {
+                        job.progress = 100;
+                        job.completed = true;
+                        job.inProgress = false;
+                        appState.user.coins += job.reward;
+                        appState.user.exp += 5;
+                        if (appState.user.exp >= 100) {
+                            appState.user.level++;
+                            appState.user.exp = 0;
+                        }
+                        hasUpdates = true;
+                    }
+                    hasUpdates = true;
+                }
+            });
+            
+            if (hasUpdates) {
+                updateUserInterface();
+                renderJobList();
+            }
+        }
+
+        // 初始化應用程式
+        function init() {
+            updateTime();
+            updateUserInterface();
+            renderJobList();
+            
+            // 設置定時器
+            setInterval(updateTime, 1000);
+            setInterval(updateJobProgress, 1000);
+            
+            // 點擊彈窗外部關閉
+            elements.modal.addEventListener('click', (e) => {
+                if (e.target === elements.modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        // 頁面加載完成後初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
