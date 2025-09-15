@@ -28,6 +28,27 @@ npm run dev
 npm run build
 ```
 
+### Deployment to GitHub Pages
+
+#### Option 1: Automatic Deployment (Recommended)
+1. Push your code to GitHub
+2. Go to your repository Settings > Pages
+3. Set Source to "GitHub Actions"
+4. The workflow will automatically deploy when you push to main branch
+5. Your app will be available at: `https://justforfun0906.github.io/MCHackerthon/`
+
+#### Option 2: Manual Deployment
+```bash
+# On Windows (PowerShell)
+.\deploy.ps1
+
+# On Linux/Mac
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Then commit and push the generated files to GitHub.
+
 ### Deployment
 The app is optimized for cloud phone environments with:
 - Fixed 128x160 viewport dimensions
