@@ -1,15 +1,18 @@
 # Manual deployment script for GitHub Pages (PowerShell)
-# Run this if you want to deploy manually instead of using GitHub Actions
+# This builds the app directly to root directory for GitHub Pages
 
-Write-Host "Building the Vue.js app..." -ForegroundColor Green
+Write-Host "Building the Vue.js app to root directory..." -ForegroundColor Green
 npm run build
 
-Write-Host "Copying dist files to root for GitHub Pages..." -ForegroundColor Green
-Copy-Item "dist/index.html" "./" -Force
-if (Test-Path "./assets") {
-    Remove-Item "./assets" -Recurse -Force
-}
-Copy-Item "dist/assets" "./" -Recurse -Force
-
-Write-Host "Deployment files ready! Commit and push to GitHub." -ForegroundColor Yellow
+Write-Host "Build complete! Files are now in root directory." -ForegroundColor Green
+Write-Host "Commit and push these files to GitHub:" -ForegroundColor Yellow
+Write-Host "  - index.html (built version)" -ForegroundColor White
+Write-Host "  - assets/ folder" -ForegroundColor White
+Write-Host ""
+Write-Host "Commands to deploy:" -ForegroundColor Cyan
+Write-Host "  git add index.html assets/" -ForegroundColor White
+Write-Host "  git commit -m 'Deploy Vue.js app'" -ForegroundColor White
+Write-Host "  git push origin main" -ForegroundColor White
+Write-Host ""
+Write-Host "Then go to GitHub repo Settings > Pages and set Source to 'Deploy from a branch' > 'main' > '/ (root)'" -ForegroundColor Yellow
 Write-Host "Your app will be available at: https://justforfun0906.github.io/MCHackerthon/" -ForegroundColor Cyan
