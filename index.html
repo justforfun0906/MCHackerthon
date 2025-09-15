@@ -4,9 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=128, height=160, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>迷你打工</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    
+    <!-- Vue.js CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="app">
+        <mini-job-app></mini-job-app>
+    </div>
+
+    <!-- Vue Components -->
+    <script src="components/StatusBar.js"></script>
+    <script src="components/UserCard.js"></script>
+    <script src="components/JobSection.js"></script>
+    <script src="components/BottomNav.js"></script>
+    <script src="components/Modal.js"></script>
+    <script src="components/MiniJobApp.js"></script>
+    
+    <!-- Main App -->
+    <script src="js/app.js"></script>
 </body>
 </html>

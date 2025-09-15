@@ -1,107 +1,95 @@
-# 迷你打工 Vue.js App
+# 迷你打工 - Mini Job App
 
-A mini job application built with Vue.js designed for 128x160 cloud phone displays.
+A modular 128x160 mini job application built with Vue.js 3 using CDN and organized file structure for easy GitHub Pages deployment.
 
 ## Features
 
 - 👤 User profile with level and coins system
-- 📋 Job list with progress tracking
+- 📋 Interactive job list with progress tracking
 - 💰 Reward system for completed jobs
 - 📱 Optimized for 128x160 cloud phone screens
 - ⚡ Real-time progress updates
+- 🎯 Modular Vue.js components for maintainability
 
-## Development
+## Project Structure
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm
-
-### Setup
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
+```
+MCHackerthon/
+├── index.html              ← Main HTML file
+├── css/                    ← Stylesheets
+│   ├── reset.css          ← CSS reset and base styles
+│   ├── main.css           ← Main layout styles
+│   └── components.css     ← Component-specific styles
+├── js/                    ← JavaScript files
+│   └── app.js             ← Main app initialization
+├── components/            ← Vue.js components
+│   ├── StatusBar.js       ← Top status bar component
+│   ├── UserCard.js        ← User profile card component
+│   ├── JobSection.js      ← Job list and management
+│   ├── BottomNav.js       ← Bottom navigation component
+│   ├── Modal.js           ← Modal dialog component
+│   └── MiniJobApp.js      ← Main app component
+├── README.md              ← Documentation
+└── LICENSE                ← License file
 ```
 
-### Deployment to GitHub Pages
+## Deployment to GitHub Pages
 
-This project is configured to build to the `docs/` folder, which GitHub Pages supports.
-
-#### Quick Deployment Steps:
-1. **Build the app**: `npm run build` (this creates files in `docs/` folder)
-2. **Commit the built files**:
-   ```bash
-   git add docs/
-   git commit -m "Deploy Vue.js app to docs"
-   git push origin main
-   ```
-3. **Configure GitHub Pages**:
+### Quick Setup:
+1. **Upload files**: Commit all files to your GitHub repository
+2. **Configure GitHub Pages**:
    - Go to your GitHub repository
    - Settings → Pages 
    - Set Source to "Deploy from a branch"
    - Select branch: `main`
-   - Select folder: `/docs`
+   - Select folder: `/ (root)`
    - Save
 
-4. **Access your app**: `https://justforfun0906.github.io/MCHackerthon/`
+3. **Access your app**: `https://yourusername.github.io/repositoryname/`
 
-#### Using Deployment Script:
-```powershell
-# Windows PowerShell
-.\deploy.ps1
-
-# Linux/Mac
-chmod +x deploy.sh
-./deploy.sh
+### Simple Commands:
+```bash
+git add .
+git commit -m "Deploy modular Vue.js mini job app"
+git push origin main
 ```
 
-### File Structure for Deployment
-```
-├── docs/               ← Built files for GitHub Pages
-│   ├── index.html      ← Production HTML
-│   └── assets/         ← CSS/JS bundles
-├── src/                ← Source code
-├── index.html          ← Development HTML
-└── package.json        ← Dependencies
-```
+## Component Overview
 
-### Deployment
-The app is optimized for cloud phone environments with:
-- Fixed 128x160 viewport dimensions
-- Touch-friendly interface
-- Lightweight bundle size
-- Network accessible server (0.0.0.0:3000)
+### Core Components
+- **StatusBar**: Displays app title and current time
+- **UserCard**: Shows user avatar, level, coins, and experience progress
+- **JobSection**: Lists available jobs with progress tracking
+- **BottomNav**: Navigation tabs for different app sections
+- **Modal**: Confirmation dialogs for job actions
+- **MiniJobApp**: Main app component that orchestrates everything
 
-### File Structure
-```
-├── index.html          # Main HTML file
-├── package.json        # Dependencies and scripts
-├── vite.config.js      # Vite configuration
-└── src/
-    ├── main.js         # Vue app entry point
-    ├── App.vue         # Main application component
-    └── style.css       # Global styles
-```
+### Features
+- **Modular Design**: Each component is in its own file for easy maintenance
+- **Event Communication**: Components communicate through Vue's emit system
+- **Reactive State**: User data and job progress update in real-time
+- **Responsive UI**: Optimized for 128x160 pixel displays
 
-## Original Features Ported
-All functionality from the original `mainPage.html` has been converted to Vue.js:
-- Reactive user data (level, coins, experience)
-- Interactive job system with progress tracking
-- Modal dialogs for job confirmation
-- Real-time clock display
-- Tab navigation system
-- Auto-completing jobs with rewards
+## Technical Details
 
-## Usage
-1. View available jobs in the main list
-2. Click on a job to start it
-3. Watch progress bars fill automatically
-4. Earn coins and experience points
-5. Level up as you complete more jobs
+- **Framework**: Vue.js 3 (CDN-based)
+- **Architecture**: Component-based with separation of concerns
+- **CSS Organization**: Split into logical files (reset, main, components)
+- **Browser Support**: All modern browsers
+- **Dependencies**: None (except Vue.js CDN)
+- **Size**: Small footprint (~15KB total)
 
-The app runs on `http://localhost:3000` in development mode and can be accessed from any device on the network for cloud phone testing.
+## Local Development
+
+Simply open `index.html` in any modern web browser. No build process or server required!
+
+## GitHub Pages Compatibility
+
+✅ **Perfect for GitHub Pages**:
+- No build process required
+- Modular file organization
+- CDN-based dependencies
+- Works immediately after upload
+- Easy to maintain and extend
+
+This project demonstrates a clean, modular Vue.js application structure that's both maintainable and perfectly suited for GitHub Pages deployment.
