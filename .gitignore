@@ -14,10 +14,8 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Build artifacts (we'll build directly to root for GitHub Pages)
+# Build artifacts (except docs for GitHub Pages)
 dist/
 
-# Keep source files and built files separate
-# The built files will be in root for GitHub Pages
-/assets/
-# But keep the index.html from build in root
+# Keep docs folder for GitHub Pages deployment
+# docs/ will be committed for GitHub Pages

@@ -9,15 +9,8 @@ export default defineConfig({
     port: 3000
   },
   build: {
-    outDir: './',
+    outDir: 'docs',
     assetsDir: 'assets',
-    emptyOutDir: false,
-    rollupOptions: {
-      output: {
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
-    }
+    emptyOutDir: true
   }
 })
