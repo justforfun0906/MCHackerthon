@@ -15,20 +15,4 @@
     flex-direction: column;
 }
 
-/* 進度條通用樣式 */
-.progress-bar {
-    width: 100%;
-    height: 3px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 2px 0;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #00ff88, #00aaff);
-    border-radius: 2px;
-    transition: width 0.3s;
-    width: 0%;
-}
+/* 進度條樣式已移除 */

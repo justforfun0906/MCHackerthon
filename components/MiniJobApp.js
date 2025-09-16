@@ -7,11 +7,19 @@ const MiniJobApp = {
             
             <!-- 主要內容 -->
             <div class="main-content">
-                <!-- 用戶資訊卡 -->
-                <user-card :user="user"></user-card>
+                <!-- 主畫面：選擇身分 -->
+                <template v-if="!role">
+                    <div class="job-section">
+                        <div class="section-title">請選擇您的身份</div>
+                        <div class="job-list">
+                            <div class="job-item" @click="chooseRole('seeker')">找工作</div>
+                            <div class="job-item" @click="chooseRole('employer')">我是雇主</div>
+                        </div>
+                    </div>
+                </template>
 
                 <!-- 搜尋職缺 -->
-                <template v-if="currentTab === 'search'">
+                <template v-else-if="currentTab === 'search' && role === 'seeker'">
                     <filter-bar 
                         :region="filters.region"
                         :skill="filters.skill"
@@ -27,8 +35,22 @@ const MiniJobApp = {
                 </template>
 
                 <!-- 發佈職缺 -->
-                <template v-else-if="currentTab === 'post'">
-                    <post-form 
+                <template v-else-if="currentTab === 'post' && role === 'employer'">
+                    <div class="job-section" v-if="!ownerId">
+                        <div class="section-title">請先設定您的雇主代碼</div>
+                        <div class="job-item">
+                            <input 
+                                type="text" 
+                                placeholder="輸入雇主代碼(任意字)" 
+                                v-model="ownerInput"
+                                style="width:100%;font-size:6px;padding:2px;"
+                            />
+                            <div class="actions">
+                                <button class="modal-btn" @click="saveOwnerId">設定</button>
+                            </div>
+                        </div>
+                    </div>
+                    <post-form v-if="ownerId"
                         :regions="regions"
                         :roles="roles"
                         :store-types="storeTypes"
@@ -37,18 +59,31 @@ const MiniJobApp = {
                     ></post-form>
                 </template>
 
-                <!-- 個人 -->
-                <template v-else>
-                    <div class="job-section">
-                        <div class="section-title">👤 個人資訊</div>
-                        <div class="job-item">已發佈職缺：{{ jobs.length }} 則</div>
+                <!-- 雇主：我的職缺監看 -->
+                <template v-else-if="currentTab === 'mine' && role === 'employer'">
+                    <div class="job-section" v-if="!ownerId">
+                        <div class="section-title">請先設定您的雇主代碼</div>
+                        <div class="job-item">
+                            <input 
+                                type="text" 
+                                placeholder="輸入雇主代碼(任意字)" 
+                                v-model="ownerInput"
+                                style="width:100%;font-size:6px;padding:2px;"
+                            />
+                            <div class="actions">
+                                <button class="modal-btn" @click="saveOwnerId">設定</button>
+                            </div>
+                        </div>
                     </div>
+                    <job-section :jobs="myJobs" @select-job="viewJob"></job-section>
                 </template>
             </div>
             
             <!-- 底部導航 -->
             <bottom-nav 
+                v-if="role"
                 :current-tab="currentTab"
+                :tabs="navTabs"
                 @switch-tab="switchTab"
             ></bottom-nav>
             
@@ -64,7 +99,6 @@ const MiniJobApp = {
     `,
     components: {
         StatusBar,
-        UserCard,
         JobSection,
         BottomNav,
         Modal,
@@ -72,41 +106,46 @@ const MiniJobApp = {
         PostForm
     },
     setup() {
-        const { ref, reactive, computed, onMounted, onUnmounted, watch } = Vue;
-        
-        // 響應式狀態
+        const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
+
+        // 狀態
+        const role = ref(null); // 'seeker' | 'employer'
         const currentTab = ref('search');
         const selectedJob = ref(null);
         const showModal = ref(false);
         const modalTitle = ref('');
         const modalMessage = ref('');
         const currentTime = ref('00:00');
+        const ownerId = ref('');
+        const ownerInput = ref('');
 
         // 字典
         const regions = ['台北', '新北', '桃園', '台中', '台南', '高雄'];
         const roles = ['櫃台', '外場', '內場', '粗工', '清潔'];
         const storeTypes = ['餐飲', '零售', '服務', '工地'];
         const timeSlots = ['早班', '中班', '晚班', '彈性'];
-        const skills = roles; // 簡化：技能=職務
+        const skills = roles; // 技能=職務
 
-        const user = reactive({
-            name: '新手小雞',
-            level: 1,
-            coins: 50,
-            exp: 25
-        });
-        
-    // 職缺資料（Firestore）
-    const jobs = ref([]);
+        // Firestore 資料
+        const jobs = ref([]);
 
+        // 篩選
         const filters = reactive({ region: '', skill: '' });
+        const filteredJobs = computed(() => jobs.value.filter(j => {
+            const regionOk = !filters.region || j.region === filters.region;
+            const skillOk = !filters.skill || j.roles.includes(filters.skill);
+            const countOk = (j.count ?? 0) > 0;
+            return regionOk && skillOk && countOk;
+        }));
 
-        const filteredJobs = computed(() => {
-            return jobs.value.filter(j => {
-                const regionOk = !filters.region || j.region === filters.region;
-                const skillOk = !filters.skill || j.roles.includes(filters.skill);
-                return regionOk && skillOk;
-            });
+        // 雇主監看
+        const myJobs = computed(() => ownerId.value ? jobs.value.filter(j => j.ownerId === ownerId.value) : []);
+
+        // 動態底導
+        const navTabs = computed(() => {
+            if (role.value === 'seeker') return [ { key: 'search', label: '找工作' } ];
+            if (role.value === 'employer') return [ { key: 'post', label: '發佈' }, { key: 'mine', label: '我的職缺' } ];
+            return [];
         });
 
         // Firestore 訂閱
@@ -119,16 +158,11 @@ const MiniJobApp = {
                 return;
             }
             const col = window.db.collection('jobs');
-            unsubscribe = col.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+            unsubscribe = col.orderBy('createdAt', 'desc').onSnapshot(snap => {
                 const arr = [];
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    arr.push({ id: doc.id, ...d });
-                });
+                snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
                 jobs.value = arr;
-            }, (err) => {
-                console.error('[Firestore] onSnapshot error', err);
-            });
+            }, err => console.error('[Firestore] onSnapshot error', err));
         };
 
         // 動作
@@ -142,12 +176,13 @@ const MiniJobApp = {
         const addJob = async (payload) => {
             try {
                 if (!window.db) throw new Error('Firebase 尚未初始化');
-                const docData = { ...payload, createdAt: Date.now() };
+                if (!ownerId.value) throw new Error('請先設定雇主代碼');
+                const docData = { ...payload, createdAt: Date.now(), ownerId: ownerId.value };
                 await window.db.collection('jobs').add(docData);
                 modalTitle.value = '發佈成功';
                 modalMessage.value = '您的職缺已上架';
                 showModal.value = true;
-                currentTab.value = 'search';
+                currentTab.value = 'mine';
             } catch (e) {
                 console.error(e);
                 modalTitle.value = '發佈失敗';
@@ -156,41 +191,63 @@ const MiniJobApp = {
             }
         };
 
+        const applyJob = async (job) => {
+            try {
+                if (!window.firebase || !window.db) throw new Error('Firebase 尚未初始化');
+                const docRef = window.db.collection('jobs').doc(job.id);
+                await window.db.runTransaction(async (tx) => {
+                    const snap = await tx.get(docRef);
+                    if (!snap.exists) throw new Error('職缺不存在');
+                    const data = snap.data();
+                    const curr = data.count || 0;
+                    if (curr <= 0) throw new Error('此職缺已滿');
+                    tx.update(docRef, { count: window.firebase.firestore.FieldValue.increment(-1) });
+                });
+                modalTitle.value = '應徵成功';
+                modalMessage.value = '已通知雇主（示意）';
+                showModal.value = true;
+            } catch (e) {
+                console.error(e);
+                modalTitle.value = '應徵失敗';
+                modalMessage.value = e.message || '請稍後再試';
+                showModal.value = true;
+            }
+        };
+
         // 時間更新
         let timeInterval = null;
         const updateTime = () => {
             const now = new Date();
-            const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
-                           now.getMinutes().toString().padStart(2, '0');
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
             currentTime.value = timeString;
         };
 
-        // 切換標籤
-        const switchTab = (tab) => {
-            currentTab.value = tab;
+        // UI 控制
+        const switchTab = (tab) => { currentTab.value = tab; };
+        const chooseRole = (r) => { role.value = r; currentTab.value = r === 'seeker' ? 'search' : 'post'; };
+        const saveOwnerId = () => { if (ownerInput.value) ownerId.value = ownerInput.value.trim(); };
+        const closeModal = () => { showModal.value = false; };
+        const confirmAction = () => {
+            if (role.value === 'seeker' && selectedJob.value) {
+                applyJob(selectedJob.value);
+            }
+            showModal.value = false;
         };
 
         // 生命週期
-        onMounted(() => {
-            updateTime();
-            timeInterval = setInterval(updateTime, 1000);
-            startSubscribe();
-        });
-        onUnmounted(() => {
-            if (timeInterval) clearInterval(timeInterval);
-            if (typeof unsubscribe === 'function') unsubscribe();
-        });
+        onMounted(() => { updateTime(); timeInterval = setInterval(updateTime, 1000); startSubscribe(); });
+        onUnmounted(() => { if (timeInterval) clearInterval(timeInterval); if (typeof unsubscribe === 'function') unsubscribe(); });
 
         // 導出
         return {
+            role,
             currentTab,
             selectedJob,
             showModal,
             modalTitle,
             modalMessage,
             currentTime,
-            user,
-            jobs: jobs,
+            jobs,
             regions,
             roles,
             storeTypes,
@@ -198,11 +255,18 @@ const MiniJobApp = {
             skills,
             filters,
             filteredJobs,
+            myJobs,
+            navTabs,
+            ownerId,
+            ownerInput,
             viewJob,
             addJob,
-            closeModal: () => { showModal.value = false; },
-            confirmAction: () => { showModal.value = false; },
-            switchTab
+            applyJob,
+            closeModal,
+            confirmAction,
+            switchTab,
+            chooseRole,
+            saveOwnerId
         };
     }
 };
