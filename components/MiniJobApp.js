@@ -7,8 +7,13 @@ const MiniJobApp = {
             
             <!-- 主要內容 -->
             <div class="main-content">
+                <!-- 登入 -->
+                <template v-if="!user">
+                    <phone-login @success="onLoginSuccess"></phone-login>
+                </template>
+
                 <!-- 主畫面：選擇身分 -->
-                <template v-if="!role">
+                <template v-else-if="!role">
                     <div class="job-section">
                         <div class="section-title">請選擇您的身份</div>
                         <div class="job-list">
@@ -85,6 +90,7 @@ const MiniJobApp = {
                 :current-tab="currentTab"
                 :tabs="navTabs"
                 @switch-tab="switchTab"
+                @logout="logout"
             ></bottom-nav>
             
             <!-- 彈窗 -->
@@ -103,12 +109,14 @@ const MiniJobApp = {
         BottomNav,
         Modal,
         FilterBar,
+        PhoneLogin,
         PostForm
     },
     setup() {
         const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
 
         // 狀態
+        const user = ref(null);
         const role = ref(null); // 'seeker' | 'employer'
         const currentTab = ref('search');
         const selectedJob = ref(null);
@@ -234,12 +242,57 @@ const MiniJobApp = {
             showModal.value = false;
         };
 
+        const onLoginSuccess = async (u) => {
+            user.value = u;
+            // 建立/更新使用者資料
+            try {
+                if (window.db && u && u.uid) {
+                    const ref = window.db.collection('users').doc(u.uid);
+                    await ref.set({
+                        uid: u.uid,
+                        phoneNumber: u.phoneNumber || '',
+                        createdAt: window.firebase ? window.firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+                        lastLoginAt: window.firebase ? window.firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+                    }, { merge: true });
+                }
+            } catch (e) { console.warn('Persist user profile failed', e); }
+
+            modalTitle.value = '歡迎登入';
+            modalMessage.value = u.phoneNumber ? `已登入：${u.phoneNumber}` : '登入成功';
+            showModal.value = true;
+        };
+
+        const logout = async () => {
+            try {
+                if (window.auth) await window.auth.signOut();
+                user.value = null;
+                role.value = null;
+                modalTitle.value = '已登出';
+                modalMessage.value = '您已成功登出。';
+                showModal.value = true;
+            } catch (e) {
+                console.error(e);
+                modalTitle.value = '登出失敗';
+                modalMessage.value = '請稍後再試';
+                showModal.value = true;
+            }
+        };
+
         // 生命週期
-        onMounted(() => { updateTime(); timeInterval = setInterval(updateTime, 1000); startSubscribe(); });
+        onMounted(() => {
+            updateTime();
+            timeInterval = setInterval(updateTime, 1000);
+            startSubscribe();
+            // 監聽登入狀態
+            if (window.auth) {
+                window.auth.onAuthStateChanged(u => { user.value = u || null; });
+            }
+        });
         onUnmounted(() => { if (timeInterval) clearInterval(timeInterval); if (typeof unsubscribe === 'function') unsubscribe(); });
 
         // 導出
         return {
+            user,
             role,
             currentTab,
             selectedJob,
@@ -266,7 +319,8 @@ const MiniJobApp = {
             confirmAction,
             switchTab,
             chooseRole,
-            saveOwnerId
+            saveOwnerId,
+            onLoginSuccess
         };
     }
 };

@@ -7,13 +7,14 @@ const BottomNav = {
                 :class="{ active: currentTab === t.key }"
                 @click="switchTab(t.key)"
             >{{ t.label }}</button>
+            <button class="nav-btn" @click="$emit('logout')">登出</button>
         </div>
     `,
     props: {
         currentTab: String,
         tabs: { type: Array, default: null }
     },
-    emits: ['switch-tab'],
+    emits: ['switch-tab', 'logout'],
     computed: {
         renderTabs() {
             return this.tabs && this.tabs.length ? this.tabs : [

@@ -18,7 +18,10 @@
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
-    const db = firebase.firestore();
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  // Optional: set SMS language
+  try { auth.useDeviceLanguage(); } catch (e) {}
     // Optional: Offline persistence
     if (db && typeof db.enablePersistence === 'function') {
       db.enablePersistence().catch(err => {
@@ -30,6 +33,9 @@
 
     // Expose globally for simplicity
     window.db = db;
+    window.auth = auth;
+    window.firebaseReady = true;
+    console.info('[Firebase] Initialized (compat)');
   } catch (err) {
     console.error('[Firebase] Initialization error:', err);
   }
