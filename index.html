@@ -19,8 +19,12 @@
     <script src="js/firebase.js"></script>
 </head>
 <body>
-    <div id="app">
-        <mini-job-app></mini-job-app>
+    <div class="viewport-wrapper">
+        <div class="phone-stage">
+            <div id="app" class="fixed-canvas">
+                <mini-job-app></mini-job-app>
+            </div>
+        </div>
     </div>
 
     <!-- Vue Components -->
@@ -31,6 +35,7 @@
     <script src="components/FilterBar.js"></script>
     <script src="components/PhoneLogin.js"></script>
     <script src="components/PostForm.js"></script>
+    <script src="components/PhoneMock.js"></script>
     <script src="components/MiniJobApp.js"></script>
     
     <!-- Main App -->

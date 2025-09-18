@@ -7,12 +7,13 @@ const BottomNav = {
                 :class="{ active: currentTab === t.key }"
                 @click="switchTab(t.key)"
             >{{ t.label }}</button>
-            <button class="nav-btn" @click="$emit('logout')">登出</button>
+                <button v-if="showLogout" class="nav-btn" @click="$emit('logout')">登出</button>
         </div>
     `,
     props: {
         currentTab: String,
-        tabs: { type: Array, default: null }
+        tabs: { type: Array, default: null },
+        showLogout: { type: Boolean, default: false },
     },
     emits: ['switch-tab', 'logout'],
     computed: {

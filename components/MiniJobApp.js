@@ -7,12 +7,12 @@ const MiniJobApp = {
             
             <!-- 主要內容 -->
             <div class="main-content">
-                <!-- 登入 -->
-                <template v-if="!user">
-                    <phone-login @success="onLoginSuccess"></phone-login>
+                <!-- 手機驗證階段 -->
+                <template v-if="!mockVerified">
+                    <phone-mock @verified="onMockVerified"></phone-mock>
                 </template>
 
-                <!-- 主畫面：選擇身分 -->
+                <!-- 主畫面：選擇身分（驗證後顯示） -->
                 <template v-else-if="!role">
                     <div class="job-section">
                         <div class="section-title">請選擇您的身份</div>
@@ -25,7 +25,7 @@ const MiniJobApp = {
 
                 <!-- 搜尋職缺 -->
                 <template v-else-if="currentTab === 'search' && role === 'seeker'">
-                    <filter-bar 
+                    <filter-bar v-if="!selectedJob"
                         :region="filters.region"
                         :skill="filters.skill"
                         :regions="regions"
@@ -33,10 +33,30 @@ const MiniJobApp = {
                         @update:region="filters.region = $event"
                         @update:skill="filters.skill = $event"
                     ></filter-bar>
-                    <job-section 
-                        :jobs="filteredJobs" 
-                        @select-job="viewJob"
-                    ></job-section>
+                    <template v-if="!selectedJob">
+                        <job-section 
+                            :jobs="filteredJobs" 
+                            @select-job="viewJob"
+                        ></job-section>
+                    </template>
+                    <template v-else>
+                        <div class="inline-job-panel full">
+                            <div class="panel-title">職缺詳情</div>
+                            <div class="panel-line">地區：{{ selectedJob.region }}</div>
+                            <div class="panel-line">類型：{{ selectedJob.storeType }}</div>
+                            <div class="panel-line">職務：{{ selectedJob.roles.join('、') }}</div>
+                            <div class="panel-line">時段：{{ selectedJob.time }}</div>
+                            <div class="panel-line">剩餘：{{ selectedJob.count }}</div>
+                            <div class="panel-actions">
+                                <button class="panel-btn" @click="applySelected" :disabled="applyLoading || applyingDone || (selectedJob.count<=0)">
+                                    <span v-if="!applyingDone">{{ applyLoading ? '處理中...' : '應徵' }}</span>
+                                    <span v-else>已應徵</span>
+                                </button>
+                                <button class="panel-btn secondary" @click="closePanel">返回列表</button>
+                            </div>
+                            <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
+                        </div>
+                    </template>
                 </template>
 
                 <!-- 發佈職缺 -->
@@ -89,6 +109,7 @@ const MiniJobApp = {
                 v-if="role"
                 :current-tab="currentTab"
                 :tabs="navTabs"
+                :show-logout="true"
                 @switch-tab="switchTab"
                 @logout="logout"
             ></bottom-nav>
@@ -109,14 +130,14 @@ const MiniJobApp = {
         BottomNav,
         Modal,
         FilterBar,
-        PhoneLogin,
+        PhoneMock,
         PostForm
     },
     setup() {
         const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
 
         // 狀態
-        const user = ref(null);
+    const mockVerified = ref(false);
         const role = ref(null); // 'seeker' | 'employer'
         const currentTab = ref('search');
         const selectedJob = ref(null);
@@ -136,14 +157,31 @@ const MiniJobApp = {
 
         // Firestore 資料
         const jobs = ref([]);
+        const inlineMessage = ref('');
+        const applyLoading = ref(false);
+        const applyingDone = ref(false);
 
         // 篩選
         const filters = reactive({ region: '', skill: '' });
+        const normalizeRoles = (val) => {
+            if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
+            if (typeof val === 'string') return [val];
+            return [];
+        };
         const filteredJobs = computed(() => jobs.value.filter(j => {
-            const regionOk = !filters.region || j.region === filters.region;
-            const skillOk = !filters.skill || j.roles.includes(filters.skill);
-            const countOk = (j.count ?? 0) > 0;
-            return regionOk && skillOk && countOk;
+            try {
+                if (!j._normalizedRoles) {
+                    j.roles = normalizeRoles(j.roles);
+                    Object.defineProperty(j, '_normalizedRoles', { value: true, enumerable: false });
+                }
+                const regionOk = !filters.region || j.region === filters.region;
+                const skillOk = !filters.skill || (Array.isArray(j.roles) && j.roles.indexOf(filters.skill) !== -1);
+                const countOk = (j.count ?? 0) > 0;
+                return regionOk && skillOk && countOk;
+            } catch (e) {
+                console.warn('[filteredJobs guard]', e, j);
+                return false;
+            }
         }));
 
         // 雇主監看
@@ -169,16 +207,38 @@ const MiniJobApp = {
             unsubscribe = col.orderBy('createdAt', 'desc').onSnapshot(snap => {
                 const arr = [];
                 snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
-                jobs.value = arr;
+                    // Normalize roles to always be an array of strings
+                    jobs.value = arr.map(j => {
+                        let rolesNorm = [];
+                        if (Array.isArray(j.roles)) rolesNorm = j.roles.filter(r => typeof r === 'string');
+                        else if (typeof j.roles === 'string') rolesNorm = [j.roles];
+                        return { ...j, roles: rolesNorm };
+                    });
             }, err => console.error('[Firestore] onSnapshot error', err));
         };
 
         // 動作
         const viewJob = (job) => {
-            selectedJob.value = job;
-            modalTitle.value = `${job.region}｜${job.storeType}`;
-            modalMessage.value = `需求：${job.roles.join('、')}\n時段：${job.time}\n人數：${job.count}`;
-            showModal.value = true;
+            const safeJob = { ...job, roles: normalizeRoles(job.roles) };
+            selectedJob.value = safeJob;
+            inlineMessage.value = '';
+            applyingDone.value = false;
+            if (role.value === 'employer') {
+                modalTitle.value = `${safeJob.region}｜${safeJob.storeType}`;
+                modalMessage.value = `需求：${safeJob.roles.join('、')}` + `\n時段：${safeJob.time}\n人數：${safeJob.count}`;
+                showModal.value = true;
+            }
+        };
+        const applySelected = async () => {
+            if (!selectedJob.value || applyingDone.value) return;
+            applyLoading.value = true;
+            await applyJob(selectedJob.value);
+            applyLoading.value = false;
+        };
+        const closePanel = () => {
+            selectedJob.value = null;
+            inlineMessage.value = '';
+            applyingDone.value = false;
         };
 
         const addJob = async (payload) => {
@@ -202,23 +262,37 @@ const MiniJobApp = {
         const applyJob = async (job) => {
             try {
                 if (!window.firebase || !window.db) throw new Error('Firebase 尚未初始化');
+                if (!job || !job.id) throw new Error('資料異常：缺少職缺 ID');
+                if (!Array.isArray(job.roles)) job.roles = normalizeRoles(job.roles);
                 const docRef = window.db.collection('jobs').doc(job.id);
                 await window.db.runTransaction(async (tx) => {
                     const snap = await tx.get(docRef);
                     if (!snap.exists) throw new Error('職缺不存在');
                     const data = snap.data();
+                    const dataRoles = normalizeRoles(data.roles);
+                    if (!Array.isArray(dataRoles)) console.warn('[applyJob data roles malformed]', data.roles);
                     const curr = data.count || 0;
                     if (curr <= 0) throw new Error('此職缺已滿');
                     tx.update(docRef, { count: window.firebase.firestore.FieldValue.increment(-1) });
                 });
-                modalTitle.value = '應徵成功';
-                modalMessage.value = '已通知雇主（示意）';
-                showModal.value = true;
+                    if (role.value === 'seeker') {
+                        inlineMessage.value = '應徵成功（示意：已通知雇主）';
+                        applyingDone.value = true;
+                    } else {
+                        modalTitle.value = '應徵成功';
+                        modalMessage.value = '已通知雇主（示意）';
+                        showModal.value = true;
+                    }
             } catch (e) {
-                console.error(e);
-                modalTitle.value = '應徵失敗';
-                modalMessage.value = e.message || '請稍後再試';
-                showModal.value = true;
+                const errMsg = (e && e.message) ? e.message : '未知錯誤，請稍後再試';
+                console.error('[applyJob error]', errMsg, e, job);
+                if (role.value === 'seeker') {
+                    inlineMessage.value = '失敗：' + errMsg;
+                } else {
+                    modalTitle.value = '應徵失敗';
+                    modalMessage.value = errMsg;
+                    showModal.value = true;
+                }
             }
         };
 
@@ -242,40 +316,18 @@ const MiniJobApp = {
             showModal.value = false;
         };
 
-        const onLoginSuccess = async (u) => {
-            user.value = u;
-            // 建立/更新使用者資料
-            try {
-                if (window.db && u && u.uid) {
-                    const ref = window.db.collection('users').doc(u.uid);
-                    await ref.set({
-                        uid: u.uid,
-                        phoneNumber: u.phoneNumber || '',
-                        createdAt: window.firebase ? window.firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
-                        lastLoginAt: window.firebase ? window.firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
-                    }, { merge: true });
-                }
-            } catch (e) { console.warn('Persist user profile failed', e); }
-
-            modalTitle.value = '歡迎登入';
-            modalMessage.value = u.phoneNumber ? `已登入：${u.phoneNumber}` : '登入成功';
-            showModal.value = true;
-        };
-
-        const logout = async () => {
-            try {
-                if (window.auth) await window.auth.signOut();
-                user.value = null;
-                role.value = null;
-                modalTitle.value = '已登出';
-                modalMessage.value = '您已成功登出。';
-                showModal.value = true;
-            } catch (e) {
-                console.error(e);
-                modalTitle.value = '登出失敗';
-                modalMessage.value = '請稍後再試';
-                showModal.value = true;
-            }
+        const onLoginSuccess = () => {}; // 已不使用真實登入
+        const onMockVerified = () => { mockVerified.value = true; };
+        // 登出：重置所有與會話相關狀態
+        const logout = () => {
+            role.value = null;
+            currentTab.value = 'search';
+            selectedJob.value = null;
+            ownerId.value = '';
+            ownerInput.value = '';
+            filters.region = '';
+            filters.skill = '';
+            mockVerified.value = false; // 回到驗證畫面
         };
 
         // 生命週期
@@ -284,18 +336,19 @@ const MiniJobApp = {
             timeInterval = setInterval(updateTime, 1000);
             startSubscribe();
             // 監聽登入狀態
-            if (window.auth) {
-                window.auth.onAuthStateChanged(u => { user.value = u || null; });
-            }
+            // 已移除真實 auth 監聽
         });
         onUnmounted(() => { if (timeInterval) clearInterval(timeInterval); if (typeof unsubscribe === 'function') unsubscribe(); });
 
         // 導出
         return {
-            user,
             role,
+            mockVerified,
             currentTab,
             selectedJob,
+            inlineMessage,
+            applyLoading,
+            applyingDone,
             showModal,
             modalTitle,
             modalMessage,
@@ -315,12 +368,17 @@ const MiniJobApp = {
             viewJob,
             addJob,
             applyJob,
+            applySelected,
             closeModal,
             confirmAction,
             switchTab,
             chooseRole,
             saveOwnerId,
-            onLoginSuccess
+            onLoginSuccess,
+            // mockVerified 已在前面導出一次，避免重複
+            onMockVerified,
+            logout,
+            closePanel
         };
     }
 };
