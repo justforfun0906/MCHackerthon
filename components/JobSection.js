@@ -18,6 +18,9 @@ const JobSection = {
                         <span>需求：{{ job.roles.join('、') }}</span>
                         <span>{{ job.time }}</span>
                     </div>
+                    <div v-if="job.note" class="job-note">
+                        <span>備註：{{ job.note }}</span>
+                    </div>
                 </div>
                 <div v-if="jobs.length === 0" class="job-item">目前沒有符合條件的職缺</div>
             </div>

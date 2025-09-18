@@ -35,6 +35,10 @@ const PostForm = {
                 <label>人數</label>
                 <input type="number" v-model.number="form.count" min="1" max="20" required />
             </div>
+                <div class="field-row">
+                    <label>工作備註</label>
+                    <textarea v-model="form.note" placeholder="請輸入工作備註..." rows="3"></textarea>
+                </div>
             <div class="actions">
                 <button type="submit" class="modal-btn">發佈</button>
             </div>
@@ -54,7 +58,8 @@ const PostForm = {
                 storeType: '',
                 roles: [],
                 time: '',
-                count: 1
+                count: 1,
+                note: ''
             }
         };
     },
@@ -67,7 +72,8 @@ const PostForm = {
                 storeType: this.form.storeType,
                 roles: [...this.form.roles],
                 time: this.form.time,
-                count: this.form.count
+                count: this.form.count,
+                note: this.form.note
             };
             this.$emit('submit', payload);
             // reset form
@@ -76,6 +82,7 @@ const PostForm = {
             this.form.roles = [];
             this.form.time = '';
             this.form.count = 1;
+            this.form.note = '';
         }
     }
 };
