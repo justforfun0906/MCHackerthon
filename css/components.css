@@ -1,3 +1,22 @@
+.note-textarea {
+    font-size: 5px;
+    padding: 1px 2px;
+}
+.address-input {
+    font-size: 6px;
+    padding: 1px 2px;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.2);
+    color: white;
+    width: 60px;
+}
+/* 發布工作表單內容可滑動 */
+.postform-scroll {
+    max-height: 50px;
+    overflow-y: auto;
+    margin-bottom: 4px;
+}
 /* 頂部狀態欄 */
 .status-bar {
     height: 12px;
