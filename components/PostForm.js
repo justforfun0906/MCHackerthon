@@ -5,7 +5,7 @@ const PostForm = {
             <div class="postform-scroll">
                 <div class="field-row">
                     <label>地區</label>
-                    <select v-model="form.region" required>
+                    <select v-model="form.region" required class="region-select">
                         <option value="" disabled>請選擇</option>
                         <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
                     </select>
