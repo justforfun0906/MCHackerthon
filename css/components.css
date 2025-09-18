@@ -201,12 +201,17 @@
 }
 
 select, input[type="number"] {
-    font-size: 8px;
-    padding: 1px 2px;
+    font-size: 12px !important;
+    padding: 2px 4px;
     border-radius: 2px;
     border: 1px solid rgba(255,255,255,0.3);
     background: rgba(0,0,0,0.2);
     color: white;
+}
+
+select option {
+    font-size: 12px !important;
+    color: black;
 }
 
 /* 地區選單字體加大 */
