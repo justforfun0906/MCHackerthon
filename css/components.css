@@ -199,27 +199,20 @@
     font-size: 6px;
     margin-right: 4px;
 }
-
 select, input[type="number"] {
-    font-size: 12px !important; 
-    padding: 2px 4px;        
-    min-width: 80px;            
+    font-size: 12px; 
+    padding: 2px 4px;
+    min-width: 80px;
     border-radius: 3px;
     border: 1px solid rgba(255,255,255,0.5);
     background: rgba(0,0,0,0.3);
     color: white;
 }
-
-select.region-select {
-    font-size: 12px !important;  
-    min-width: 90px;            
+select.region-select,
+select.skill-select {
+    font-size: 12px;
+    min-width: 90px;
 }
-
-select.region-select {
-    font-size: 14px !important;
-    min-width: 120px; 
-}
-
 select option {
     font-size: 14px !important;
     color: black; 
