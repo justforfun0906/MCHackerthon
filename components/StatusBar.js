@@ -2,7 +2,7 @@
 const StatusBar = {
     template: `
         <div class="status-bar">
-            <span>迷你打工</span>
+            <span>Mini job</span>
             <span>{{ currentTime }}</span>
         </div>
     `,

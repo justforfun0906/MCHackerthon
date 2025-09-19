@@ -19,9 +19,9 @@ const BottomNav = {
     computed: {
         renderTabs() {
             return this.tabs && this.tabs.length ? this.tabs : [
-                { key: 'search', label: '找工作' },
-                { key: 'post', label: '發佈' },
-                { key: 'profile', label: '個人' },
+                { key: 'search', label: 'Jobs' },
+{ key: 'post', label: 'Post' },
+{ key: 'profile', label: 'Profile' },
             ];
         }
     },

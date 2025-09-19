@@ -7,7 +7,7 @@ const UserCard = {
                 <div>
                     <div>{{ user.name }}</div>
                     <div class="stats">
-                        <span>等級: {{ user.level }}</span>
+                        <span>level: {{ user.level }}</span>
                     </div>
                 </div>
             </div>

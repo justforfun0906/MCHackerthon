@@ -1,28 +1,28 @@
-// PostForm Component
+// PostForm Component (EN version)
 const PostForm = {
     template: `
         <form class="post-form" @submit.prevent="onSubmit">
             <div class="postform-scroll">
                 <div class="field-row">
-                    <label>地區</label>
+                    <label>Region</label>
                     <select v-model="form.region" required class="region-select">
-                        <option value="" disabled>請選擇</option>
+                        <option value="" disabled>Select</option>
                         <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
                     </select>
                 </div>
                 <div class="field-row">
-                    <label>店鋪類型</label>
+                    <label>Store Type</label>
                     <select v-model="form.storeType" required>
-                        <option value="" disabled>請選擇</option>
+                        <option value="" disabled>Select</option>
                         <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
                     </select>
                 </div>
                 <div class="field-row">
-                    <label>地址</label>
-                    <input type="text" v-model="form.address" placeholder="請輸入地址" class="address-input" />
+                    <label>Address</label>
+                    <input type="text" v-model="form.address" placeholder="Enter address" class="address-input" />
                 </div>
                 <div class="field-row">
-                    <label>職務</label>
+                    <label>Roles</label>
                     <div class="checkbox-row">
                         <label v-for="r in roles" :key="r" class="checkbox-item">
                             <input type="checkbox" :value="r" v-model="form.roles" /> {{ r }}
@@ -30,23 +30,23 @@ const PostForm = {
                     </div>
                 </div>
                 <div class="field-row">
-                    <label>時段</label>
+                    <label>Time Slot</label>
                     <select v-model="form.time" required>
-                        <option value="" disabled>請選擇</option>
+                        <option value="" disabled>Select</option>
                         <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
                     </select>
                 </div>
                 <div class="field-row">
-                    <label>人數</label>
+                    <label>Openings</label>
                     <input type="number" v-model.number="form.count" min="1" max="20" required />
                 </div>
                 <div class="field-row">
-                    <label>工作備註</label>
-                    <textarea v-model="form.note" placeholder="請輸入工作備註..." rows="3" class="note-textarea"></textarea>
+                    <label>Notes</label>
+                    <textarea v-model="form.note" placeholder="Enter job notes..." rows="3" class="note-textarea"></textarea>
                 </div>
             </div>
             <div class="actions">
-                <button type="submit" class="modal-btn">發佈</button>
+                <button type="submit" class="modal-btn">Post</button>
             </div>
         </form>
     `,
@@ -87,6 +87,7 @@ const PostForm = {
             // reset form
             this.form.region = '';
             this.form.storeType = '';
+            this.form.address = '';
             this.form.roles = [];
             this.form.time = '';
             this.form.count = 1;

@@ -5,8 +5,8 @@ const Modal = {
             <div class="modal-content" @click.stop>
                 <div>{{ title }}</div>
                 <div>{{ message }}</div>
-                <button class="modal-btn" @click="confirmAction">確認</button>
-                <button class="modal-btn" @click="closeModal">取消</button>
+                <button class="modal-btn" @click="confirmAction">confirm</button>
+                <button class="modal-btn" @click="closeModal">close</button>
             </div>
         </div>
     `,

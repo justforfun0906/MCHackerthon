@@ -3,21 +3,22 @@ const FilterBar = {
     template: `
         <div class="filter-bar">
             <div class="field-row">
-                <label>地區</label>
+                <label>Region</label>
                 <select v-model="localRegion" @change="emitRegion">
-                    <option value="">不限</option>
+                    <option value="">All</option>
                     <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
                 </select>
             </div>
             <div class="field-row">
-                <label>技能</label>
+                <label>Skill</label>
                 <select v-model="localSkill" @change="emitSkill">
-                    <option value="">不限</option>
+                    <option value="">All</option>
                     <option v-for="s in skills" :key="s" :value="s">{{ s }}</option>
                 </select>
             </div>
         </div>
     `,
+
     props: {
         region: { type: String, default: '' },
         skill: { type: String, default: '' },

@@ -1,32 +1,32 @@
-// PhoneLogin Component - Firebase Phone Auth (compat)
+// PhoneLogin Component - Firebase Phone Auth (compat) [EN version]
 const PhoneLogin = {
   template: `
     <div class="job-section">
-      <div class="section-title">手機登入</div>
+      <div class="section-title">Phone Sign-in</div>
       <div class="job-item">
         <div v-if="step === 'phone'">
           <input
             type="tel"
             v-model="phone"
-            placeholder="輸入手機號碼 (含國碼，如 +886912345678)"
+            placeholder="Enter phone number with country code (e.g., +886912345678)"
             style="width:100%;font-size:6px;padding:2px;"
           />
           <div id="recaptcha-container" style="margin:6px 0;"></div>
           <div class="actions">
-            <button class="modal-btn" :disabled="busy || !phone" @click="sendCode">發送驗證碼</button>
+            <button class="modal-btn" :disabled="busy || !phone" @click="sendCode">Send verification code</button>
           </div>
         </div>
         <div v-else>
-          <div style="font-size:6px;margin-bottom:4px;">我們已傳送簡訊至：{{ phone }}</div>
+          <div style="font-size:6px;margin-bottom:4px;">We sent an SMS to: {{ phone }}</div>
           <input
             type="text"
             v-model="code"
-            placeholder="輸入 6 位數驗證碼"
+            placeholder="Enter 6-digit code"
             style="width:100%;font-size:6px;padding:2px;letter-spacing:2px;"
           />
           <div class="actions">
-            <button class="modal-btn" :disabled="busy || code.length < 6" @click="verifyCode">驗證並登入</button>
-            <button class="modal-btn" :disabled="busy" @click="reset">返回修改手機</button>
+            <button class="modal-btn" :disabled="busy || code.length < 6" @click="verifyCode">Verify & Sign in</button>
+            <button class="modal-btn" :disabled="busy" @click="reset">Back to phone</button>
           </div>
         </div>
         <div v-if="error" style="color:#c00;font-size:6px;margin-top:4px;">{{ error }}</div>
@@ -46,7 +46,7 @@ const PhoneLogin = {
 
     const initRecaptcha = () => {
       if (!window.firebase || !window.auth) {
-        error.value = 'Firebase 尚未初始化';
+        error.value = 'Firebase is not initialized.';
         return;
       }
       // Invisible reCAPTCHA to prevent abuse
@@ -59,7 +59,7 @@ const PhoneLogin = {
     const sendCode = async () => {
       error.value = '';
       if (!/^\+\d{6,15}$/.test(phone.value.trim())) {
-        error.value = '請輸入含國碼的手機號碼，例如 +886912345678';
+        error.value = 'Please enter a valid phone number with country code, e.g., +886912345678';
         return;
       }
       try {
@@ -68,7 +68,7 @@ const PhoneLogin = {
         step.value = 'code';
       } catch (e) {
         console.error(e);
-        error.value = e && e.message ? e.message : '發送驗證碼失敗';
+        error.value = e && e.message ? e.message : 'Failed to send verification code.';
         // reset verifier on error
         try { recaptcha.clear(); } catch {}
         initRecaptcha();
@@ -80,7 +80,7 @@ const PhoneLogin = {
     const verifyCode = async () => {
       error.value = '';
       if (!confirmationResult) {
-        error.value = '請先發送驗證碼';
+        error.value = 'Please request a verification code first.';
         return;
       }
       try {
@@ -89,7 +89,7 @@ const PhoneLogin = {
         emit('success', result.user);
       } catch (e) {
         console.error(e);
-        error.value = e && e.message ? e.message : '驗證失敗，請重試';
+        error.value = e && e.message ? e.message : 'Verification failed. Please try again.';
       } finally {
         busy.value = false;
       }
