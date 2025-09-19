@@ -7,7 +7,7 @@ const BottomNav = {
                 :class="{ active: currentTab === t.key }"
                 @click="switchTab(t.key)"
             >{{ t.label }}</button>
-                <button v-if="showLogout" class="nav-btn" @click="$emit('logout')">登出</button>
+                <button v-if="showLogout" class="nav-btn" @click="$emit('logout')"logout</button>
         </div>
     `,
     props: {
@@ -20,8 +20,8 @@ const BottomNav = {
         renderTabs() {
             return this.tabs && this.tabs.length ? this.tabs : [
                 { key: 'search', label: 'Jobs' },
-{ key: 'post', label: 'Post' },
-{ key: 'profile', label: 'Profile' },
+                { key: 'post', label: 'Post' },
+                { key: 'profile', label: 'Profile' },
             ];
         }
     },
