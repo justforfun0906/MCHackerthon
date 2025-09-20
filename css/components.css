@@ -100,7 +100,57 @@
     border-radius: 4px;
 }
 
-/* Grid-based layout for better space utilization - No scroll */
+/* Inbox and Applicant styles */
+.applicant-item {
+    background: #2a2a3a; /* Slightly different background for applicants */
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+    min-height: 24px;
+    color: #fff;
+}
+
+.applicant-item:hover {
+    background: #3a3a4a; /* Lighter on hover */
+}
+
+.applicant-item.dpad-focus {
+    border: 2px solid #fff; /* White border for focused items */
+}
+
+.applicant-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.applicant-name {
+    font-weight: bold;
+    color: #ffff88; /* Light yellow for names */
+}
+
+.applicant-time {
+    color: #88ff88; /* Light green for time */
+    font-size: 12px;
+}
+
+.job-details {
+    margin: 2px 0;
+    font-size: 14px;
+    color: #cccccc;
+}
+
+.contact-info {
+    font-size: 14px;
+    color: #aaaaff; /* Light blue for contact info */
+}
+
+/* Job grid - Grid-based layout for better space utilization - No scroll */
 .job-grid {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Two columns for better space usage */
