@@ -11,7 +11,7 @@ const PostForm = {
             </div>
             <div class="field-row">
                 <label>Store Type</label>
-                <select v-model="form.storeType" required @keydown="handleSelectKeydown" ref="storeTypeSelect">
+                <select v-model="form.storeType" required class="store-type-select" @keydown="handleSelectKeydown" ref="storeTypeSelect">
                     <option value="" disabled>Select</option>
                     <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
                 </select>
@@ -24,20 +24,20 @@ const PostForm = {
                 <label>Roles</label>
                 <div class="checkbox-row">
                     <label v-for="r in roles" :key="r" class="checkbox-item">
-                        <input type="checkbox" :value="r" v-model="form.roles" /> {{ r }}
+                        <input type="checkbox" :value="r" v-model="form.roles" class="role-checkbox" /> {{ r }}
                     </label>
                 </div>
             </div>
             <div class="field-row">
                 <label>Time Slot</label>
-                <select v-model="form.time" required @keydown="handleSelectKeydown" ref="timeSelect">
+                <select v-model="form.time" required class="time-select" @keydown="handleSelectKeydown" ref="timeSelect">
                     <option value="" disabled>Select</option>
                     <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
                 </select>
             </div>
             <div class="field-row">
                 <label>Openings</label>
-                <input type="number" v-model.number="form.count" min="1" max="20" required />
+                <input type="number" v-model.number="form.count" min="1" max="20" required class="count-input" />
             </div>
             <div class="field-row">
                 <label>Notes</label>
