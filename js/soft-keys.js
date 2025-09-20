@@ -120,9 +120,9 @@ class SoftKeys extends HTMLElement {
         const html = document.createElement("div");
         html.innerHTML = `
             <div class="softkeys-container">
-                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label="確認" data-key="lsk">
+                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label="confirm" data-key="lsk">
                     ${menuIcon}
-                    <span class="key-label">確認</span>
+                    <span class="key-label">confirm</span>
                 </div>
                 <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="Enter" data-key="enter">
                     Enter
@@ -144,7 +144,7 @@ class SoftKeys extends HTMLElement {
     setupEventListeners() {
         const [leftKey, centerKey, rightKey] = this.shadowRoot.querySelectorAll(".soft-key");
 
-        // 左軟鍵 (LSK) - 確認
+        // 左軟鍵 (LSK) - confirm
         leftKey.addEventListener("click", () => {
             this.dispatchEvent(
                 new CustomEvent("softkeyclick", {

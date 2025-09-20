@@ -42,49 +42,23 @@ const MiniJobApp = {
 
             <!-- Search Jobs -->
             <template v-else-if="currentTab === 'search' && role === 'seeker'">
-            <!-- Step 1: Selection Flow -->
+            <!-- Step 1: Selection menu -->
             <template v-if="!filtersSelected">
-                <!-- Main selection menu -->
-                <template v-if="selectionFlow === 'menu'">
-                    <div class="filter-selection-page">
-                        <div class="section-title">Select your preferences</div>
-                        <div class="job-list">
-                            <div class="job-item" @click="startRegionSelection">
-                                <span>Regions: {{ regionDisplayText }}</span>
-                                <span v-if="filters.region.length">✓</span>
-                            </div>
-                            <div class="job-item" @click="startSkillSelection">
-                                <span>Skill: {{ filters.skill || 'Not selected' }}</span>
-                                <span v-if="filters.skill">✓</span>
-                            </div>
-                            <!-- Inserted: open profile from menu -->
-                            <div class="job-item" @click="openProfile">My Profile</div>
+                <div class="filter-selection-page">
+                    <div class="section-title">Select your preferences</div>
+                    <div class="job-list">
+                        <div class="job-item" @click="startRegionSelection">
+                            <span>Regions: {{ regionDisplayText }}</span>
+                            <span v-if="filters.region.length">✓</span>
                         </div>
+                        <div class="job-item" @click="startSkillSelection">
+                            <span>Skill: {{ filters.skill || 'Not selected' }}</span>
+                            <span v-if="filters.skill">✓</span>
+                        </div>
+                        <!-- Inserted: open profile from menu -->
+                        <div class="job-item" @click="openProfile">My Profile</div>
                     </div>
-                </template>
-                
-                <!-- Region selection page -->
-                <template v-else-if="selectionFlow === 'region'">
-                    <selection-page
-                        selection-type="region"
-                        :options="regions"
-                        :selected-value="filters.region"
-                        :multi-select="true"
-                        @selected="onSelectionMade"
-                        @back="backToMenu"
-                    ></selection-page>
-                </template>
-                
-                <!-- Skill selection page -->
-                <template v-else-if="selectionFlow === 'skill'">
-                    <selection-page
-                        selection-type="skill"
-                        :options="skills"
-                        :selected-value="filters.skill"
-                        @selected="onSelectionMade"
-                        @back="backToMenu"
-                    ></selection-page>
-                </template>
+                </div>
             </template>
             
             <!-- Step 2: Job Listing (after filters selected) -->
@@ -111,6 +85,29 @@ const MiniJobApp = {
                 </div>
                 </template>
             </template>
+            </template>
+
+            <!-- Seeker: Region selection page (standard page) -->
+            <template v-else-if="currentTab === 'select-region' && role === 'seeker'">
+                <selection-page
+                    selection-type="region"
+                    :options="regions"
+                    :selected-value="filters.region"
+                    :multi-select="true"
+                    @selected="onSelectionMade"
+                    @back="backFromRegion"
+                ></selection-page>
+            </template>
+
+            <!-- Seeker: Skill selection page (standard page) -->
+            <template v-else-if="currentTab === 'select-skill' && role === 'seeker'">
+                <selection-page
+                    selection-type="skill"
+                    :options="skills"
+                    :selected-value="filters.skill"
+                    @selected="onSelectionMade"
+                    @back="backFromSkill"
+                ></selection-page>
             </template>
 
             <!-- Post a Job (default view for employers) -->
@@ -460,34 +457,34 @@ const MiniJobApp = {
 
         // New selection flow functions
         const startRegionSelection = () => {
-            selectionFlow.value = 'region';
+            currentTab.value = 'select-region';
         };
 
         const startSkillSelection = () => {
-            selectionFlow.value = 'skill';
+            currentTab.value = 'select-skill';
         };
 
         const onSelectionMade = (selection) => {
             if (selection.type === 'region') {
                 if (selection.multiSelect) {
                     filters.region = Array.isArray(selection.value) ? selection.value : [];
-                    // Only go back to menu if it's a finished selection (Escape pressed)
+                    // Only navigate back when selection is finished (e.g., Back/Escape inside component)
                     if (selection.finished) {
-                        selectionFlow.value = 'menu';
+                        currentTab.value = 'search';
                     }
                 } else {
                     filters.region = [selection.value];
-                    selectionFlow.value = 'menu';
+                    currentTab.value = 'search';
                 }
             } else if (selection.type === 'skill') {
                 filters.skill = selection.value;
-                selectionFlow.value = 'menu';
+                // Keep current behavior for skill: return to preferences menu
+                currentTab.value = 'search';
             }
         };
 
         const backToMenu = () => {
-            selectionFlow.value = 'menu';
-            // Update navigation to focus on the first element
+            currentTab.value = 'search';
             if (window.navigationService) {
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
@@ -495,6 +492,9 @@ const MiniJobApp = {
                 }, 100);
             }
         };
+
+        const backFromRegion = () => { backToMenu(); };
+        const backFromSkill = () => { backToMenu(); };
 
         const backToFilterSelection = () => {
         filtersSelected.value = false;
@@ -561,11 +561,9 @@ const MiniJobApp = {
 
 
         const handleReturn = () => {
-        // Seeker: never leave the preferences area via generic back
-        if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
-            if (selectionFlow.value !== 'menu') {
-                backToMenu();
-            }
+        // Seeker: dedicated region/skill pages
+        if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
+            backToMenu();
             return;
         }
         if (currentTab.value === 'profile') {
@@ -616,6 +614,16 @@ const MiniJobApp = {
                     if (showModal.value) {
                         // Confirm current modal action (e.g., delete)
                         confirmAction();
+                    } else if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
+                        // Finish selection and return to preferences menu
+                        if (currentTab.value === 'select-region') {
+                            // Mark selection finished so onSelectionMade won't bounce early
+                            onSelectionMade({ type: 'region', value: filters.region.slice(0), multiSelect: true, finished: true });
+                            backFromRegion();
+                        } else if (currentTab.value === 'select-skill') {
+                            backFromSkill();
+                        }
+                        break;
                     } else if (currentTab.value === 'profile') {
                         if (profileRef.value && typeof profileRef.value.save === 'function') {
                             profileRef.value.save();
@@ -666,11 +674,12 @@ const MiniJobApp = {
                         closePanel();
                     } else if (currentTab.value === 'profile') {
                         handleReturn();
+                    } else if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
+                        // From dedicated selection pages, go back to preferences menu
+                        backToMenu();
                     } else if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
-                        // In seeker preferences: if in region/skill, go back to menu; if already in menu, do nothing
-                        if (selectionFlow.value !== 'menu') {
-                            backToMenu();
-                        }
+                        // From preferences menu, go to role chooser
+                        handleReturn();
                     } else {
                         handleReturn();
                     }
@@ -775,6 +784,12 @@ const MiniJobApp = {
                         center: 'Enter',
                         right: 'Back'
                     });
+                } else if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
+                    softKeysElement.updateLabels({
+                        left: 'Done',
+                        center: 'Enter',
+                        right: 'Back'
+                    });
                 } else if (selectedJob.value && role.value === 'seeker') {
                     // Job details page for seekers - show Apply
                     softKeysElement.updateLabels({
@@ -798,7 +813,7 @@ const MiniJobApp = {
                             right: 'Back'
                         });
                     } else {
-                        // Not both selected, show "確認" (Confirm)
+                        // Not both selected, show "confirm" (Confirm)
                         softKeysElement.updateLabels({
                             left: 'Confirm',
                             center: 'Enter',
@@ -817,11 +832,23 @@ const MiniJobApp = {
         };
 
     // Lifecycle
+    const triggerRSK = () => {
+        const sk = document.querySelector('soft-keys');
+        if (sk) {
+            const evt = new CustomEvent('softkeyclick', { bubbles: true, composed: true, detail: { key: 'rsk', source: 'hardware-back', action: 'return' } });
+            sk.dispatchEvent(evt);
+        } else {
+            // Fallback
+            handleReturn();
+        }
+    };
+
     const handlePopState = (e) => {
-    try { e && e.preventDefault && e.preventDefault(); } catch {}
-    // Re-push state to keep SPA in place and navigate internally
-    try { history.pushState(null, '', location.href); } catch {}
-    handleReturn();
+        try { e && e.preventDefault && e.preventDefault(); } catch {}
+        // Re-push state to keep SPA in place and navigate internally
+        try { history.pushState(null, '', location.href); } catch {}
+        // Mirror RSK behavior
+        triggerRSK();
     };
         onMounted(() => {
         updateTime();
@@ -857,12 +884,8 @@ const MiniJobApp = {
                 }
             },
             onBack: () => {
-                // Map F12/Back (RSK) to cancel/return
-                if (showModal.value) {
-                    closeModal();
-                } else {
-                    handleReturn();
-                }
+                // Bind hardware/back to RSK behavior
+                triggerRSK();
             }
             });
             
