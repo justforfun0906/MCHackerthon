@@ -151,8 +151,6 @@ const MiniJobApp = {
             </template>
             </template>
         </div>
-        
-        <!-- Bottom Navigation -->
         <bottom-nav 
             v-if="role"
         ></bottom-nav>
