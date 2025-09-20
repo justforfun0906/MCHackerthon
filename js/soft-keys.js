@@ -120,14 +120,14 @@ class SoftKeys extends HTMLElement {
         const html = document.createElement("div");
         html.innerHTML = `
             <div class="softkeys-container">
-                <div class="soft-key left" tabindex="0" role="button" aria-label="確認" data-key="lsk">
+                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label="確認" data-key="lsk">
                     ${menuIcon}
                     <span class="key-label">確認</span>
                 </div>
-                <div class="soft-key center no-focus" tabindex="-1" role="button" aria-label="選擇" data-key="enter">
+                <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="選擇" data-key="enter">
                     選擇
                 </div>
-                <div class="soft-key right" tabindex="0" role="button" aria-label="返回" data-key="rsk">
+                <div class="soft-key right no-navigation" tabindex="-1" role="button" aria-label="返回" data-key="rsk">
                     ${backIcon}
                     <span class="key-label">返回</span>
                 </div>
@@ -159,9 +159,19 @@ class SoftKeys extends HTMLElement {
             );
         });
 
-        // 中心鍵 - 選擇（不觸發任何動作）
+        // 中心鍵 - 選擇（觸發enter事件）
         centerKey.addEventListener("click", () => {
-            // 中心鍵不觸發任何動作，只是顯示標籤
+            this.dispatchEvent(
+                new CustomEvent("softkeyclick", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { 
+                        key: "enter",
+                        source: "center-key",
+                        action: "input"
+                    }
+                })
+            );
         });
 
         // 右軟鍵 (RSK) - 返回
@@ -193,8 +203,8 @@ class SoftKeys extends HTMLElement {
                 e.preventDefault();
                 leftKey.click();
             } else if (e.key === "Enter" || e.key === " ") {
-                // Don't intercept Enter - let navigation system handle it
-                // Center key is now just a visual indicator
+                e.preventDefault();
+                centerKey.click();
             } else if (e.key === "SoftRight" || e.key === "F12") {
                 e.preventDefault();
                 rightKey.click();
@@ -293,13 +303,8 @@ class SoftKeys extends HTMLElement {
         const tagName = element.tagName.toLowerCase();
         const className = element.className;
 
-        if (tagName === 'button' || className.includes('btn')) {
-            // 按鈕元素高亮中心鍵
-            this.shadowRoot.querySelector('.center').classList.add('dpad-focus');
-        } else if (tagName === 'a' || className.includes('nav')) {
-            // 連結元素高亮中心鍵
-            this.shadowRoot.querySelector('.center').classList.add('dpad-focus');
-        }
+        // 不再高亮任何軟鍵，因為軟鍵不應該被選中
+        // 軟鍵只是視覺指示器，不應該顯示焦點樣式
     }
 
     // 顯示/隱藏軟鍵
