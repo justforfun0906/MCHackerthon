@@ -18,15 +18,20 @@ const PostForm = {
             </div>
             <div class="field-row">
                 <label>Address</label>
-                <input type="text" v-model="form.address" placeholder="Enter address" class="address-input" />
+                <input 
+                    type="text" 
+                    v-model="form.address" 
+                    placeholder="Enter address" 
+                    class="address-input"
+                    @input="handleAddressInput"
+                />
             </div>
             <div class="field-row">
-                <label>Roles</label>
-                <div class="checkbox-row">
-                    <label v-for="r in roles" :key="r" class="checkbox-item">
-                        <input type="checkbox" :value="r" v-model="form.roles" class="role-checkbox" /> {{ r }}
-                    </label>
-                </div>
+                <label>Role</label>
+                <select v-model="form.role" required class="role-select" @keydown="handleSelectKeydown" ref="roleSelect">
+                    <option value="" disabled>Select Role</option>
+                    <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
+                </select>
             </div>
             <div class="field-row">
                 <label>Time Slot</label>
@@ -37,14 +42,26 @@ const PostForm = {
             </div>
             <div class="field-row">
                 <label>Openings</label>
-                <input type="number" v-model.number="form.count" min="1" max="20" required class="count-input" />
+                <input 
+                    type="number" 
+                    v-model.number="form.count" 
+                    min="1" 
+                    max="20" 
+                    required 
+                    class="count-input"
+                    @input="handleCountInput"
+                />
             </div>
             <div class="field-row">
                 <label>Notes</label>
-                <textarea v-model="form.note" placeholder="Enter job notes..." rows="3" class="note-textarea"></textarea>
-            </div>
-            <div class="field-row">
-                <button type="submit" class="modal-btn post-btn">Post Job</button>
+                <textarea 
+                    v-model="form.note" 
+                    placeholder="Enter job notes..." 
+                    rows="3" 
+                    class="note-textarea"
+                    @input="handleTextareaInput"
+                    @keydown="handleTextareaKeydown"
+                ></textarea>
             </div>
         </form>
     `,
@@ -63,7 +80,7 @@ const PostForm = {
                 region: '',
                 storeType: '',
                 address: '',
-                roles: [],
+                role: '',
                 time: '',
                 count: 1,
                 note: ''
@@ -83,13 +100,39 @@ const PostForm = {
                 select.click();
             }
         },
+        handleConfirm() {
+            // Called when confirm action is triggered
+            this.onSubmit();
+        },
+        handleTextareaInput(event) {
+            // Ensure the textarea value is properly updated
+            this.form.note = event.target.value;
+        },
+        handleAddressInput(event) {
+            // Ensure the address input value is properly updated
+            this.form.address = event.target.value;
+        },
+        handleCountInput(event) {
+            // Ensure the count input value is properly updated
+            this.form.count = parseInt(event.target.value) || 1;
+        },
+        handleTextareaKeydown(event) {
+            // Allow normal typing and navigation within textarea
+            // Don't prevent default for most keys to allow normal text input
+            if (event.key === 'Enter' && event.ctrlKey) {
+                // Allow Ctrl+Enter to submit if needed
+                event.preventDefault();
+                this.handleConfirm();
+            }
+            // Let other keys work normally for text input
+        },
         onSubmit() {
-            if (!this.form.region || !this.form.storeType || !this.form.time || this.form.roles.length === 0) return;
+            if (!this.form.region || !this.form.storeType || !this.form.time || !this.form.role) return;
             const payload = {
                 region: this.form.region,
                 storeType: this.form.storeType,
                 address: this.form.address,
-                roles: [...this.form.roles],
+                role: this.form.role,
                 time: this.form.time,
                 count: this.form.count,
                 note: this.form.note
@@ -101,7 +144,7 @@ const PostForm = {
             this.form.region = '';
             this.form.storeType = '';
             this.form.address = '';
-            this.form.roles = [];
+            this.form.role = '';
             this.form.time = '';
             this.form.count = 1;
             this.form.note = '';
