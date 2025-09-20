@@ -101,6 +101,9 @@ const MiniJobApp = {
                     <div class="panel-line">Roles: {{ selectedJob.roles.join(', ') }}</div>
                     <div class="panel-line">Time: {{ selectedJob.time }}</div>
                     <div class="panel-line">Remaining: {{ selectedJob.count }}</div>
+                    <div class="panel-actions">
+                    <!-- Apply and Back to list now controlled by soft keys -->
+                    </div>
                     <!-- Actions moved to soft keys: LSK = Confirm (Apply), RSK = Close -->
                     <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
                 </div>
@@ -134,6 +137,12 @@ const MiniJobApp = {
                 <div class="panel-line">Remaining: {{ selectedJob.count }}</div>
                 <div class="panel-line">Address: {{ selectedJob.address || 'Not specified' }}</div>
                 <div class="panel-line">Notes: {{ selectedJob.note || 'None' }}</div>
+                <div class="panel-actions">
+                    <button class="panel-btn delete-btn" @click="deleteSelected" v-if="role === 'employer'">
+                    Delete Job
+                    </button>
+                    <!-- Back to list now controlled by soft keys -->
+                </div>
                 <!-- Actions moved to soft keys: LSK = Confirm (Delete), RSK = Close -->
                 <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
                 </div>
@@ -622,6 +631,9 @@ const MiniJobApp = {
                 case 'rsk': // Right Soft Key - Return
                     if (showModal.value) {
                         closeModal();
+                    } else if (selectedJob.value) {
+                        // Back to list from job detail
+                        closePanel();
                     } else {
                         handleReturn();
                     }
@@ -699,6 +711,11 @@ const MiniJobApp = {
             updateSoftKeyLabels();
         });
 
+        // Watch for selectedJob changes to update soft key labels
+        Vue.watch(selectedJob, () => {
+            updateSoftKeyLabels();
+        });
+
         // Watch for filtersSelected changes to update navigation
         Vue.watch(filtersSelected, (newValue) => {
             if (window.navigationService) {
@@ -714,20 +731,43 @@ const MiniJobApp = {
         // Function to update soft key labels
         const updateSoftKeyLabels = () => {
             const softKeysElement = document.querySelector('soft-keys');
-            if (softKeysElement && role.value === 'seeker' && !filtersSelected.value) {
-                if (filters.region.length && filters.skill) {
-                    // Both selected, show "送出" (Submit)
+            if (softKeysElement) {
+                if (selectedJob.value && role.value === 'seeker') {
+                    // Job details page for seekers - show Apply
                     softKeysElement.updateLabels({
-                        left: '送出',
-                        center: '輸入',
-                        right: '返回'
+                        left: 'Apply',
+                        center: 'Enter',
+                        right: 'Back'
                     });
-                } else {
-                    // Not both selected, show "確認" (Confirm)
+                } else if (selectedJob.value && role.value === 'employer') {
+                    // Job details page for employers - show default
                     softKeysElement.updateLabels({
-                        left: '確認',
-                        center: '輸入',
-                        right: '返回'
+                        left: 'Confirm',
+                        center: 'Enter',
+                        right: 'Back'
+                    });
+                } else if (role.value === 'seeker' && !filtersSelected.value) {
+                    if (filters.region.length && filters.skill) {
+                        // Both selected, show "送出" (Submit)
+                        softKeysElement.updateLabels({
+                            left: 'Submit',
+                            center: 'Enter',
+                            right: 'Back'
+                        });
+                    } else {
+                        // Not both selected, show "確認" (Confirm)
+                        softKeysElement.updateLabels({
+                            left: 'Confirm',
+                            center: 'Enter',
+                            right: 'Back'
+                        });
+                    }
+                } else {
+                    // Default labels
+                    softKeysElement.updateLabels({
+                        left: 'Confirm',
+                        center: 'Enter',
+                        right: 'Back'
                     });
                 }
             }

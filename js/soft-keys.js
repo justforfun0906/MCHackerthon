@@ -124,13 +124,13 @@ class SoftKeys extends HTMLElement {
                     ${menuIcon}
                     <span class="key-label">確認</span>
                 </div>
-                <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="選擇" data-key="enter">
-                    選擇
+                <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="Enter" data-key="enter">
+                    Enter
                 </div>
-                <div class="soft-key right no-navigation" tabindex="-1" role="button" aria-label="返回" data-key="rsk">
-                    ${backIcon}
-                    <span class="key-label">返回</span>
-                </div>
+                        <div class="soft-key right no-navigation" tabindex="-1" role="button" aria-label="Back" data-key="rsk">
+                            ${backIcon}
+                            <span class="key-label">Back</span>
+                        </div>
             </div>
         `;
 
