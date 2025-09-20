@@ -329,12 +329,6 @@ const MiniJobApp = {
         
         // Remove modal logic for employers - they should see the inline panel instead
         };
-        const applySelected = async () => {
-        if (!selectedJob.value || applyingDone.value) return;
-        applyLoading.value = true;
-        await applyJob(selectedJob.value);
-        applyLoading.value = false;
-        };
         const closePanel = () => {
         selectedJob.value = null;
         inlineMessage.value = '';
@@ -637,7 +631,7 @@ const MiniJobApp = {
                         confirmAction();
                     } else if (selectedJob.value) {
                         if (role.value === 'seeker') {
-                            applySelected();
+                            // Apply functionality removed - do nothing
                         } else if (role.value === 'employer') {
                             // Employer: LSK triggers delete confirmation
                             deleteSelected();
@@ -834,7 +828,7 @@ const MiniJobApp = {
                     confirmAction();
                 } else if (selectedJob.value) {
                     if (role.value === 'seeker') {
-                        applySelected();
+                        // Apply functionality removed - do nothing
                     } else if (role.value === 'employer') {
                         deleteSelected();
                     }
@@ -924,7 +918,6 @@ const MiniJobApp = {
         deleteJob,
         deleteSelected,
         applyJob,
-        applySelected,
         closeModal,
         confirmAction,
         switchTab,
