@@ -28,37 +28,14 @@ const UserProfile = {
     </div>
   `,
   props: {
-    userId: { type: String, required: true },
-    userKey: { type: String, default: '' }
+    userId: { type: String, required: true }
   },
   emits: ['back','saved'],
   setup(props, { emit, expose }) {
-    const { ref, onMounted, watch, onUnmounted, nextTick, computed } = Vue;
-    const form = ref({ name: '', phone: '', address: '', workExperience: '', contactOther: '' });
+    const { ref, onMounted, watch, onUnmounted, nextTick } = Vue;
+  const form = ref({ name: '', phone: '', address: '', workExperience: '', contactOther: '' });
     const saving = ref(false);
     const message = ref('');
-  const cacheKey = computed(() => `profileCache:${props.userKey || 'anon'}`);
-    let cacheTimer = null;
-
-    const loadCache = () => {
-      try {
-        const raw = localStorage.getItem(cacheKey.value);
-        if (raw) {
-          const obj = JSON.parse(raw);
-          if (obj && obj.form) {
-            form.value = { ...form.value, ...obj.form };
-          }
-        }
-      } catch {}
-    };
-
-    const saveCache = () => {
-      try {
-        localStorage.setItem(cacheKey.value, JSON.stringify({ form: form.value, ts: Date.now() }));
-      } catch {}
-    };
-
-    const clearCache = () => { try { localStorage.removeItem(cacheKey.value); } catch {} };
 
     const loadProfile = async () => {
       message.value = '';
@@ -99,9 +76,8 @@ const UserProfile = {
           contactOther: form.value.contactOther?.trim() || '',
           updatedAt: Date.now()
         };
-  await window.db.collection('users').doc(props.userId).set(payload, { merge: true });
-  message.value = 'Profile saved!';
-  clearCache();
+        await window.db.collection('users').doc(props.userId).set(payload, { merge: true });
+        message.value = 'Profile saved!';
         emit('saved', payload);
       } catch (e) {
         console.error('[UserProfile] save error', e);
@@ -123,17 +99,6 @@ const UserProfile = {
     };
 
     onMounted(() => {
-      // Migrate legacy userId-scoped cache to userKey-scoped
-      try {
-        const legacyKey = `profileCache:${props.userId || 'demo-user'}`;
-        const legacy = localStorage.getItem(legacyKey);
-        if (legacy && !localStorage.getItem(cacheKey.value)) {
-          localStorage.setItem(cacheKey.value, legacy);
-          try { localStorage.removeItem(legacyKey); } catch {}
-        }
-      } catch {}
-      // Load local cache first, then server profile
-      loadCache();
       loadProfile();
       document.addEventListener('keydown', handleKeyDown);
       // Focus the first input for immediate editing
@@ -147,12 +112,7 @@ const UserProfile = {
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyDown);
     });
-  watch(() => [props.userId, props.userKey], () => { loadCache(); loadProfile(); });
-    // Debounced auto-save of drafts
-    watch(form, () => {
-      try { if (cacheTimer) clearTimeout(cacheTimer); } catch {}
-      cacheTimer = setTimeout(saveCache, 300);
-    }, { deep: true });
+    watch(() => props.userId, () => loadProfile());
 
     expose({ save });
     return { form, saving, message, save };

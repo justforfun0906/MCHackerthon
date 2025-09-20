@@ -8,8 +8,6 @@ const MiniJobApp = {
         
     <!-- Main Content -->
         <div class="main-content">
-            <!-- Resume banner -->
-            <div v-if="showResumeBanner" class="resume-banner">Resumed previous session</div>
             <!-- Mock Phone Verification -->
             <template v-if="!mockVerified">
             <phone-mock @verified="onMockVerified"></phone-mock>
@@ -33,14 +31,13 @@ const MiniJobApp = {
                 <div class="job-list">
                 <div class="job-item" @click="chooseEmployerAction('post')">Post New Jobs</div>
                 <div class="job-item" @click="chooseEmployerAction('mine')">My Jobs</div>
-                <div class="job-item" @click="chooseEmployerAction('inbox')">Inbox ({{ applications.length }})</div>
                 </div>
             </div>
             </template>
 
             <!-- Profile Page -->
             <template v-else-if="currentTab === 'profile'">
-            <user-profile ref="profileRef" :user-id="userId" :user-key="userKey" @back="handleReturn" @saved="onProfileSaved" />
+            <user-profile ref="profileRef" :user-id="userId" @back="handleReturn" @saved="onProfileSaved" />
             </template>
 
             <!-- Search Jobs -->
@@ -115,9 +112,7 @@ const MiniJobApp = {
 
             <!-- Post a Job (default view for employers) -->
             <template v-else-if="role === 'employer' && employerChoice === 'post'">
-        <post-form
-            :user-id="userId"
-            :user-key="userKey"
+            <post-form
                 :regions="regions"
                 :roles="roles"
                 :store-types="storeTypes"
@@ -142,27 +137,6 @@ const MiniJobApp = {
                 <div class="panel-line">Address: {{ selectedJob.address || 'Not specified' }}</div>
                 <div class="panel-line">Notes: {{ selectedJob.note || 'None' }}</div>
                 <!-- Actions moved to soft keys: LSK = Confirm (Delete), RSK = Close -->
-                <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
-                </div>
-            </template>
-            </template>
-
-            <!-- Employer: Inbox -->
-            <template v-else-if="role === 'employer' && employerChoice === 'inbox'">
-            <template v-if="!selectedApplicant">
-                <inbox-page :applications="applications" @select-applicant="viewApplicant"></inbox-page>
-            </template>
-            <template v-else>
-                <div class="inline-job-panel full scrollable" tabindex="0">
-                <div class="panel-title">Applicant Details</div>
-                <div class="panel-line">Name: {{ selectedApplicant.applicantName || 'Anonymous' }}</div>
-                <div class="panel-line">Phone: {{ selectedApplicant.phone || 'Not provided' }}</div>
-                <div class="panel-line">Applied for: {{ selectedApplicant.jobTitle }}</div>
-                <div class="panel-line">Applied at: {{ formatApplicationTime(selectedApplicant.appliedAt) }}</div>
-                <div v-if="selectedApplicant.experience" class="panel-line">Experience: {{ selectedApplicant.experience }}</div>
-                <div v-if="selectedApplicant.skills" class="panel-line">Skills: {{ selectedApplicant.skills }}</div>
-                <div v-if="selectedApplicant.notes" class="panel-line">Notes: {{ selectedApplicant.notes }}</div>
-                <!-- Actions moved to soft keys: LSK = Contact, RSK = Close -->
                 <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
                 </div>
             </template>
@@ -198,8 +172,7 @@ const MiniJobApp = {
         PostForm,
         SelectionPage,
         UserProfile,
-        SoftKeys,
-        InboxPage
+        SoftKeys
     },
     setup() {
     const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
@@ -208,9 +181,8 @@ const MiniJobApp = {
         // State
         const mockVerified = ref(false);
         const role = ref(null); // 'seeker' | 'employer'
-        const currentTab = ref('search'); // 'search' | 'post' | 'mine' | 'profile' | 'inbox'
+        const currentTab = ref('search'); // 'search' | 'post' | 'mine' | 'profile'
         const selectedJob = ref(null);
-        const selectedApplicant = ref(null);
         const showModal = ref(false);
         const modalTitle = ref('');
         const modalMessage = ref('');
@@ -218,27 +190,8 @@ const MiniJobApp = {
         const filtersSelected = ref(false); // Track if region/skill filters are set
         const showSelectionPage = ref(null); // 'region' | 'skill' | null
         const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
-        const employerChoice = ref(null); // 'post' | 'mine' | 'inbox' | null - for employer role selection
+        const employerChoice = ref(null); // 'post' | 'mine' | null - for employer role selection
         const userId = ref('');
-        const applications = ref([]); // Store job applications
-        const userKey = ref('');
-
-        // Hash helpers and salt for non-PII storage keys
-        const APP_SALT = 'MCHackerthon-v1';
-        const toHex = (buffer) => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        const sha256Hex = async (input) => {
-            if (!(window.crypto && window.crypto.subtle)) throw new Error('SubtleCrypto not available');
-            const data = new TextEncoder().encode(input);
-            const digest = await window.crypto.subtle.digest('SHA-256', data);
-            return toHex(digest);
-        };
-        const djb2Hex = (str) => {
-            let hash = 5381;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
-            }
-            return (hash >>> 0).toString(16).padStart(8, '0');
-        };
 
         // Dictionaries (EN)
         const regions = ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'];
@@ -252,79 +205,9 @@ const MiniJobApp = {
         const inlineMessage = ref('');
         const applyLoading = ref(false);
         const applyingDone = ref(false);
-    const showResumeBanner = ref(false);
 
         // Filters - regions is now an array for multi-select
         const filters = reactive({ region: [], skill: '' });
-    const PREFS_KEY_BASE = 'seekerPrefs';
-    const SESSION_KEY_BASE = 'appSessionV1'; // legacy key base
-    const ACTIVE_SESSION_KEY = 'appSessionActiveV1'; // single-entry storage
-        const prefsKey = () => `${PREFS_KEY_BASE}:${userKey.value || 'anon'}`;
-        const loadPrefs = () => {
-            try {
-                const raw = localStorage.getItem(prefsKey());
-                if (raw) {
-                    const obj = JSON.parse(raw);
-                    if (obj && obj.region && Array.isArray(obj.region)) filters.region = obj.region;
-                    if (obj && typeof obj.skill === 'string') filters.skill = obj.skill;
-                }
-            } catch {}
-        };
-        const savePrefs = () => {
-            try { localStorage.setItem(prefsKey(), JSON.stringify({ region: filters.region, skill: filters.skill, ts: Date.now() })); } catch {}
-        };
-
-        // Session persistence
-        const buildSession = () => ({
-            ts: Date.now(),
-            userKey: userKey.value || 'anon',
-            mockVerified: mockVerified.value,
-            role: role.value,
-            currentTab: currentTab.value,
-            employerChoice: employerChoice.value,
-            filtersSelected: filtersSelected.value,
-            filters: { region: filters.region, skill: filters.skill },
-            selectedJobId: selectedJob.value && selectedJob.value.id ? String(selectedJob.value.id) : null
-        });
-
-        const saveSession = () => {
-            try { 
-                localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(buildSession()));
-                // Cleanup legacy multi-session keys to reduce storage
-                try { localStorage.removeItem(SESSION_KEY_BASE); } catch {}
-                try { localStorage.removeItem(`${SESSION_KEY_BASE}:${userId.value || 'anon'}`); } catch {}
-            } catch {}
-        };
-
-        const loadSession = () => {
-            try {
-                const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
-                if (!raw) return;
-                const s = JSON.parse(raw);
-                if (!s || typeof s !== 'object') return;
-                // Only restore if the session belongs to this user
-                if (s.userId && s.userId !== (userId.value || 'anon')) return;
-                if (!s.userKey && s.userId && s.userId !== (userId.value || 'anon')) return;
-                if (s.userKey && s.userKey !== (userKey.value || 'anon')) return;
-                // Don't downgrade verification: only apply if not already verified
-                if (typeof s.mockVerified === 'boolean' && mockVerified.value !== true) {
-                    mockVerified.value = s.mockVerified;
-                }
-                if (s.role === 'seeker' || s.role === 'employer') role.value = s.role;
-                if (typeof s.currentTab === 'string') currentTab.value = s.currentTab;
-                if (s.role === 'employer' && (s.employerChoice === 'post' || s.employerChoice === 'mine')) {
-                    employerChoice.value = s.employerChoice;
-                }
-                if (typeof s.filtersSelected === 'boolean') filtersSelected.value = s.filtersSelected;
-                if (s.filters && Array.isArray(s.filters.region)) filters.region = s.filters.region;
-                if (s.filters && typeof s.filters.skill === 'string') filters.skill = s.filters.skill;
-                // Show resume banner
-                try {
-                    showResumeBanner.value = true;
-                    setTimeout(() => { showResumeBanner.value = false; }, 2500);
-                } catch {}
-            } catch {}
-        };
         const normalizeRoles = (val) => {
         if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
         if (typeof val === 'string') return [val];
@@ -381,7 +264,6 @@ const MiniJobApp = {
 
         // Firestore subscribe
         let unsubscribe = null;
-        let unsubscribeApplications = null;
         const startSubscribe = () => {
         if (!window.db) {
             modalTitle.value = 'Connection failed';
@@ -389,8 +271,6 @@ const MiniJobApp = {
             showModal.value = true;
             return;
         }
-        
-        // Subscribe to jobs
         const col = window.db.collection('jobs');
         unsubscribe = col.orderBy('createdAt', 'desc').onSnapshot(snap => {
             console.log('📊 Firestore snapshot received, size:', snap.size);
@@ -414,19 +294,6 @@ const MiniJobApp = {
             console.log('📊 Updated jobs array, old count:', oldJobCount, 'new count:', jobs.value.length);
             console.log('📊 Current job IDs:', jobs.value.map(j => j.id));
         }, err => console.error('[Firestore] onSnapshot error', err));
-        
-        // Subscribe to applications
-        const applicationsCol = window.db.collection('applications');
-        unsubscribeApplications = applicationsCol.orderBy('appliedAt', 'desc').onSnapshot(snap => {
-            console.log('📨 Applications snapshot received, size:', snap.size);
-            const arr = [];
-            snap.forEach(doc => {
-                const data = { ...doc.data(), id: doc.id };
-                arr.push(data);
-            });
-            applications.value = arr;
-            console.log('📨 Updated applications array, count:', applications.value.length);
-        }, err => console.error('[Firestore] applications onSnapshot error', err));
         };
 
         // Actions
@@ -445,38 +312,18 @@ const MiniJobApp = {
         };
         const closePanel = () => {
         selectedJob.value = null;
-        selectedApplicant.value = null;
         inlineMessage.value = '';
         applyingDone.value = false;
         
-        // For employers, stay in current context (don't change currentTab)
-        // For seekers, ensure we stay on the job listing
-        if (role.value === 'seeker') {
-            filtersSelected.value = true;
-            // Explicitly ensure we're on the search tab
-            currentTab.value = 'search';
+        // For employers, return to post form instead of my jobs list
+        if (role.value === 'employer') {
+            currentTab.value = 'post';
         }
         
         // Update navigation when panel is closed
         if (window.navigationService) {
             window.navigationService.updateFocusableElements();
         }
-        };
-
-        const viewApplicant = (applicant) => {
-            selectedApplicant.value = applicant;
-            inlineMessage.value = '';
-            
-            // Update navigation when applicant is selected
-            if (window.navigationService) {
-                window.navigationService.updateFocusableElements();
-            }
-        };
-
-        const formatApplicationTime = (timestamp) => {
-            if (!timestamp) return 'Unknown';
-            const date = new Date(timestamp);
-            return date.toLocaleString();
         };
 
         const addJob = async (payload) => {
@@ -497,6 +344,11 @@ const MiniJobApp = {
         };
 
         const deleteJob = async (job) => {
+        console.log('🔥 deleteJob called with job:', job);
+        console.log('🔥 job.id:', job?.id);
+        console.log('🔥 job.id type:', typeof job?.id);
+        console.log('🔥 window.db exists?', !!window.db);
+        
         try {
             if (!window.db) {
                 console.log('❌ Firebase not initialized');
@@ -561,19 +413,6 @@ const MiniJobApp = {
             if (!window.firebase || !window.db) throw new Error('Firebase is not initialized');
             if (!job || !job.id) throw new Error('Invalid data: missing job ID');
             if (!Array.isArray(job.roles)) job.roles = normalizeRoles(job.roles);
-            
-            // Create application record
-            const applicationData = {
-                jobId: job.id,
-                jobTitle: `${job.region} - ${job.storeType} (${job.roles.join(', ')})`,
-                applicantName: 'Demo User', // In a real app, this would come from user profile
-                phone: userId.value || 'Not provided',
-                appliedAt: Date.now(),
-                experience: 'Entry level', // Could be from user profile
-                skills: job.roles[0], // Take first role as skill
-                notes: 'Applied through mobile app'
-            };
-            
             const docRef = window.db.collection('jobs').doc(job.id);
             await window.db.runTransaction(async (tx) => {
             const snap = await tx.get(docRef);
@@ -584,17 +423,7 @@ const MiniJobApp = {
             const curr = data.count || 0;
             if (curr <= 0) throw new Error('This job is full');
             tx.update(docRef, { count: window.firebase.firestore.FieldValue.increment(-1) });
-            
-            // Store application in Firestore
-            await window.db.collection('applications').add(applicationData);
             });
-            
-            // Add to local applications array for immediate UI update
-            applications.value.unshift({
-                id: Date.now().toString(),
-                ...applicationData
-            });
-            
             if (role.value === 'seeker') {
             inlineMessage.value = 'Applied successfully (demo: employer notified)';
             applyingDone.value = true;
@@ -647,14 +476,11 @@ const MiniJobApp = {
             currentTab.value = 'post';
         } else if (action === 'mine') {
             currentTab.value = 'mine';
-        } else if (action === 'inbox') {
-            currentTab.value = 'inbox';
         }
         };
 
         const proceedToJobList = () => {
         if (filters.region.length && filters.skill) {
-            console.log('🚀 proceedToJobList called - setting filtersSelected to true');
             filtersSelected.value = true;
             // Focus on the first job after proceeding to job list
             if (window.navigationService) {
@@ -692,7 +518,6 @@ const MiniJobApp = {
                 // Keep current behavior for skill: return to preferences menu
                 currentTab.value = 'search';
             }
-            savePrefs();
         };
 
         const backToMenu = () => {
@@ -709,11 +534,9 @@ const MiniJobApp = {
         const backFromSkill = () => { backToMenu(); };
 
         const backToFilterSelection = () => {
-        console.log('🔄 backToFilterSelection called - before: filtersSelected:', filtersSelected.value);
         filtersSelected.value = false;
         selectedJob.value = null;
         selectionFlow.value = 'menu'; // Reset to menu
-        console.log('🔄 backToFilterSelection - after: filtersSelected:', filtersSelected.value, 'selectionFlow:', selectionFlow.value);
         // Navigation will be updated by the filtersSelected watch
         };
 
@@ -745,54 +568,12 @@ const MiniJobApp = {
         };
 
         const onLoginSuccess = () => {}; // real login removed
-        const onMockVerified = async (payload) => { 
+        const onMockVerified = (payload) => { 
             mockVerified.value = true; 
             try {
                 const phone = (payload && payload.phone) ? String(payload.phone) : '';
                 userId.value = phone ? `phone:${phone}` : (userId.value || 'demo-user');
             } catch { userId.value = userId.value || 'demo-user'; }
-            // Compute hashed userKey
-            try { userKey.value = await sha256Hex(`${APP_SALT}:${userId.value}`); } catch { userKey.value = djb2Hex(`${APP_SALT}:${userId.value}`); }
-            // Migrate legacy keys to single active session for this user
-            try {
-                const legacyPrefs = localStorage.getItem(PREFS_KEY_BASE);
-                if (legacyPrefs && !localStorage.getItem(prefsKey())) localStorage.setItem(prefsKey(), legacyPrefs);
-            } catch {}
-            try {
-                const legacyGlobal = localStorage.getItem(SESSION_KEY_BASE);
-                if (legacyGlobal) {
-                    const s = JSON.parse(legacyGlobal);
-                    if (s && (s.userId === (userId.value || 'anon') || s.userKey === (userKey.value || 'anon'))) localStorage.setItem(ACTIVE_SESSION_KEY, legacyGlobal);
-                    try { localStorage.removeItem(SESSION_KEY_BASE); } catch {}
-                }
-            } catch {}
-            // Migrate userId-scoped caches to userKey-scoped
-            try {
-                const oldProfile = localStorage.getItem(`profileCache:${userId.value}`);
-                if (oldProfile && !localStorage.getItem(`profileCache:${userKey.value}`)) {
-                    localStorage.setItem(`profileCache:${userKey.value}`, oldProfile);
-                    try { localStorage.removeItem(`profileCache:${userId.value}`); } catch {}
-                }
-            } catch {}
-            try {
-                const oldPost = localStorage.getItem(`postDraft:${userId.value}`);
-                if (oldPost && !localStorage.getItem(`postDraft:${userKey.value}`)) {
-                    localStorage.setItem(`postDraft:${userKey.value}`, oldPost);
-                    try { localStorage.removeItem(`postDraft:${userId.value}`); } catch {}
-                }
-            } catch {}
-            try {
-                const oldPrefs = localStorage.getItem(`${PREFS_KEY_BASE}:${userId.value}`);
-                if (oldPrefs && !localStorage.getItem(prefsKey())) {
-                    localStorage.setItem(prefsKey(), oldPrefs);
-                    try { localStorage.removeItem(`${PREFS_KEY_BASE}:${userId.value}`); } catch {}
-                }
-            } catch {}
-            // Persist verification immediately
-            saveSession();
-            // Reload active session and prefs now that userId is known (guarded from downgrade)
-            loadPrefs();
-            loadSession();
         };
 
         // Action handlers for new buttons
@@ -830,7 +611,6 @@ const MiniJobApp = {
         const handleReturn = () => {
         // Seeker: dedicated region/skill pages
         if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
-            filtersSelected.value = false;
             backToMenu();
             return;
         }
@@ -845,15 +625,14 @@ const MiniJobApp = {
             return;
         }
         // (Handled above) Seeker selection flow
-        if (selectedJob.value || selectedApplicant.value) {
-            // Return from job detail view or applicant detail view to list
+        if (selectedJob.value) {
+            // Return from job detail view to job list
             selectedJob.value = null;
-            selectedApplicant.value = null;
             if (role.value === 'seeker') {
                 // For seekers, ensure we stay on the job listing
                 filtersSelected.value = true;
             } else if (role.value === 'employer') {
-                // For employers, stay in current employer choice (post, mine, or inbox)
+                // For employers, stay in current employer choice (post or mine)
             }
         } else if (role.value === 'seeker' && filtersSelected.value) {
             // Return from job listing to filter selection page
@@ -866,7 +645,6 @@ const MiniJobApp = {
             role.value = null;
             currentTab.value = 'search';
             selectedJob.value = null;
-            selectedApplicant.value = null;
             filters.region = '';
             filters.skill = '';
             filtersSelected.value = false;
@@ -901,20 +679,15 @@ const MiniJobApp = {
                         if (profileRef.value && typeof profileRef.value.save === 'function') {
                             profileRef.value.save();
                         }
-                    } else if (selectedJob.value || selectedApplicant.value) {
-                        console.log('🎯 Job or applicant selected, role is:', role.value);
-                        if (role.value === 'seeker' && selectedJob.value) {
-                            console.log('🎯 Seeker applying for job');
-                            // Seeker: LSK triggers apply
-                            applyJob(selectedJob.value);
-                        } else if (role.value === 'employer' && selectedJob.value) {
-                            console.log('🎯 Employer with job - calling deleteSelected');
+                    } else if (selectedJob.value) {
+                        console.log('🎯 Job selected, role is:', role.value);
+                        if (role.value === 'seeker') {
+                            console.log('🎯 Seeker - apply functionality removed');
+                            // Apply functionality removed - do nothing
+                        } else if (role.value === 'employer') {
+                            console.log('🎯 Employer - calling deleteSelected');
                             // Employer: LSK triggers delete confirmation
                             deleteSelected();
-                        } else if (role.value === 'employer' && selectedApplicant.value) {
-                            console.log('🎯 Employer with applicant - contact action');
-                            // Employer viewing applicant: LSK for contact action
-                            inlineMessage.value = `Contact ${selectedApplicant.value.applicantName || 'applicant'} at ${selectedApplicant.value.phone || 'phone not available'}`;
                         }
                     } else if (!role.value) {
                         // Role selection page - trigger the currently focused element
@@ -948,50 +721,26 @@ const MiniJobApp = {
                     break;
                     
                 case 'rsk': // Right Soft Key - Return
-                    console.log('🔍 RSK pressed - role:', role.value, 'currentTab:', currentTab.value, 'filtersSelected:', filtersSelected.value, 'selectedJob:', !!selectedJob.value, 'showModal:', showModal.value);
                     if (showModal.value) {
                         closeModal();
-                    } else if (selectedJob.value || selectedApplicant.value) {
-                        // Back to list from job detail or applicant detail
-                        console.log('🔍 RSK: Closing panel');
+                    } else if (selectedJob.value) {
+                        // Back to list from job detail
                         closePanel();
                     } else if (currentTab.value === 'profile') {
-                        console.log('🔍 RSK: From profile, calling handleReturn');
                         handleReturn();
                     } else if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
                         // From dedicated selection pages, go back to preferences menu
-                        console.log('🔍 RSK: From region/skill selection, calling backToMenu');
                         backToMenu();
-                    } else if (role.value === 'seeker' && currentTab.value === 'search') {
-                        // For seekers on search tab, check if we're in job list or filter selection
-                        const isInJobList = filtersSelected.value && (filters.region.length > 0 && !!filters.skill);
-                        const isInFilterSelection = !filtersSelected.value || !filters.region.length || !filters.skill;
-                        
-                        console.log('🔍 RSK: Seeker search tab - isInJobList:', isInJobList, 'isInFilterSelection:', isInFilterSelection);
-                        console.log('🔍 RSK: filters.region:', filters.region, 'filters.skill:', filters.skill);
-                        
-                        if (isInJobList) {
-                            // From job listing page, go back to filter selection page
-                            console.log('🔍 RSK: From job listing, calling backToFilterSelection');
-                            backToFilterSelection();
-                        } else {
-                            // From filter selection menu, go to role chooser
-                            console.log('🔍 RSK: From filter selection menu, calling handleReturn');
-                            handleReturn();
-                        }
+                    } else if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
+                        // From preferences menu, go to role chooser
+                        handleReturn();
                     } else {
-                        console.log('🔍 RSK: Default case, calling handleReturn');
                         handleReturn();
                     }
                     break;
                     
                 case 'enter': // Center key - 不觸發任何動作
-                    console.log('🔍 ENTER pressed');
                     // 中心鍵現在只是視覺指示器，不觸發任何動作
-                    break;
-                    
-                default:
-                    console.log('🔍 Unknown key pressed:', key);
                     break;
             }
         };
@@ -1057,20 +806,17 @@ const MiniJobApp = {
             }
         });
 
-        // Watch for filter changes to update soft key labels and persist
+        // Watch for filter changes to update soft key labels
         Vue.watch([() => filters.region, () => filters.skill], () => {
-            savePrefs();
-            saveSession();
             updateSoftKeyLabels();
         });
 
-        // Watch for selectedJob changes to update soft key labels and persist
+        // Watch for selectedJob changes to update soft key labels
         Vue.watch(selectedJob, () => {
-            saveSession();
             updateSoftKeyLabels();
         });
 
-        // Watch for filtersSelected changes to update navigation and persist
+        // Watch for filtersSelected changes to update navigation
         Vue.watch(filtersSelected, (newValue) => {
             if (window.navigationService) {
                 // When entering job list, focus on the first job
@@ -1080,7 +826,6 @@ const MiniJobApp = {
                     window.navigationService.focusFirstElement();
                 }, 200); // Increased delay to ensure DOM is fully updated
             }
-            saveSession();
         });
 
         // Function to update soft key labels
@@ -1107,16 +852,9 @@ const MiniJobApp = {
                         right: 'Back'
                     });
                 } else if (selectedJob.value && role.value === 'employer') {
-                    // Job details page for employers - show Delete
+                    // Job details page for employers - show default
                     softKeysElement.updateLabels({
-                        left: 'Delete',
-                        center: 'Enter',
-                        right: 'Back'
-                    });
-                } else if (selectedApplicant.value && role.value === 'employer') {
-                    // Applicant details page for employers - show Contact
-                    softKeysElement.updateLabels({
-                        left: 'Contact',
+                        left: 'Confirm',
                         center: 'Enter',
                         right: 'Back'
                     });
@@ -1166,36 +904,10 @@ const MiniJobApp = {
         // Mirror RSK behavior
         triggerRSK();
     };
-    const flushAndSave = () => {
-        try { savePrefs(); } catch {}
-        try { saveSession(); } catch {}
-    };
-    const onVisibilityChange = () => { if (document.hidden) flushAndSave(); };
-    const onPageHide = () => { flushAndSave(); };
-    const onFreeze = () => { flushAndSave(); };
-    const onBlur = () => { flushAndSave(); };
-    const onOffline = () => { flushAndSave(); };
-    const onBeforeUnload = (e) => { try { flushAndSave(); } catch {}; };
-    let autosaveInterval = null;
-    onMounted(() => {
-        // Adopt userKey early from saved session to allow pre-verification restore
-        try {
-            const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
-            if (raw) {
-                const s = JSON.parse(raw);
-                if (s && typeof s.userKey === 'string' && s.userKey) {
-                    userKey.value = s.userKey;
-                }
-            }
-        } catch {}
-        // Load prefs and session immediately for testing restoration before verification
-        loadPrefs();
-        loadSession();
+        onMounted(() => {
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
         startSubscribe();
-        // Start periodic autosave every 15 seconds
-        try { autosaveInterval = setInterval(flushAndSave, 15000); } catch {}
         
         // Initialize navigation
         if (window.navigationService) {
@@ -1250,29 +962,14 @@ const MiniJobApp = {
             history.pushState(null, '', location.href);
             window.addEventListener('popstate', handlePopState);
         } catch {}
-        // Lifecycle autosave hooks for interruptions (calls, backgrounding, network loss)
-        document.addEventListener('visibilitychange', onVisibilityChange);
-        window.addEventListener('pagehide', onPageHide);
-        window.addEventListener('freeze', onFreeze);
-        window.addEventListener('blur', onBlur);
-        window.addEventListener('offline', onOffline);
-        window.addEventListener('beforeunload', onBeforeUnload);
         });
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
-            if (autosaveInterval) clearInterval(autosaveInterval);
         if (typeof unsubscribe === 'function') unsubscribe(); 
-        if (typeof unsubscribeApplications === 'function') unsubscribeApplications(); 
         if (window.navigationService) {
             window.navigationService.deactivate();
         }
         try { window.removeEventListener('popstate', handlePopState); } catch {}
-        try { document.removeEventListener('visibilitychange', onVisibilityChange); } catch {}
-        try { window.removeEventListener('pagehide', onPageHide); } catch {}
-        try { window.removeEventListener('freeze', onFreeze); } catch {}
-        try { window.removeEventListener('blur', onBlur); } catch {}
-        try { window.removeEventListener('offline', onOffline); } catch {}
-        try { window.removeEventListener('beforeunload', onBeforeUnload); } catch {}
         });
 
         // Helpers
@@ -1296,23 +993,19 @@ const MiniJobApp = {
         mockVerified,
         currentTab,
         selectedJob,
-        selectedApplicant,
         inlineMessage,
         applyLoading,
         applyingDone,
-        showResumeBanner,
         showModal,
         modalTitle,
         modalMessage,
         currentTime,
         jobs,
-        applications,
         filtersSelected,
         selectionFlow,
         showSelectionPage,
         employerChoice,
         userId,
-    userKey,
         regions,
         roles,
         storeTypes,
@@ -1326,8 +1019,6 @@ const MiniJobApp = {
         leftSoftKey,
         rightSoftKey,
         viewJob,
-        viewApplicant,
-        formatApplicationTime,
         addJob,
         deleteJob,
         deleteSelected,
@@ -1342,8 +1033,6 @@ const MiniJobApp = {
         startSkillSelection,
         onSelectionMade,
         backToMenu,
-        backFromRegion,
-        backFromSkill,
         backToFilterSelection,
         onLoginSuccess,
         onMockVerified,

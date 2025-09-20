@@ -33,14 +33,6 @@
     outline: none !important;
 }
 
-/* Focus styles for form elements */
-input.dpad-focus, 
-select.dpad-focus, 
-textarea.dpad-focus,
-button.dpad-focus {
-    border: 2px solid #00ff00 !important; /* Green border for focused form elements */
-}
-
 /* Selection Page Styles */
 .selection-page {
     padding: 8px;
@@ -108,57 +100,7 @@ button.dpad-focus {
     border-radius: 4px;
 }
 
-/* Inbox and Applicant styles */
-.applicant-item {
-    background: #2a2a3a; /* Slightly different background for applicants */
-    border: none;
-    border-radius: 4px;
-    padding: 8px;
-    margin-bottom: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 16px;
-    min-height: 24px;
-    color: #fff;
-}
-
-.applicant-item:hover {
-    background: #3a3a4a; /* Lighter on hover */
-}
-
-.applicant-item.dpad-focus {
-    border: 2px solid #fff; /* White border for focused items */
-}
-
-.applicant-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2px;
-}
-
-.applicant-name {
-    font-weight: bold;
-    color: #ffff88; /* Light yellow for names */
-}
-
-.applicant-time {
-    color: #88ff88; /* Light green for time */
-    font-size: 12px;
-}
-
-.job-details {
-    margin: 2px 0;
-    font-size: 14px;
-    color: #cccccc;
-}
-
-.contact-info {
-    font-size: 14px;
-    color: #aaaaff; /* Light blue for contact info */
-}
-
-/* Job grid - Grid-based layout for better space utilization - No scroll */
+/* Grid-based layout for better space utilization - No scroll */
 .job-grid {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Two columns for better space usage */
@@ -245,19 +187,6 @@ button.dpad-focus {
     font-weight: bold;
     box-sizing: border-box; /* Include padding in width calculation */
     overflow-x: hidden; /* Disable horizontal scrolling */
-}
-
-.count-input {
-    font-size: 16px; /* QVGA Body size */
-    padding: 8px 12px; /* Better padding */
-    border-radius: 4px;
-    border: 2px solid #fff; /* High contrast border */
-    background: #000; /* Black background */
-    color: #fff; /* White text */
-    width: 80px; /* Appropriate width for numbers */
-    max-width: 100px; /* Maximum width */
-    font-weight: bold;
-    box-sizing: border-box; /* Include padding in width calculation */
 }
 /* 頂部狀態欄 - High Contrast */
 .status-bar {
@@ -534,10 +463,7 @@ select:focus, input[type="number"]:focus {
 }
 
 select.region-select,
-select.skill-select,
-select.role-select,
-select.store-type-select,
-select.time-select {
+select.skill-select {
     font-size: 16px; /* QVGA Body size */
     min-width: 80px; /* Further reduced to prevent overlap */
     max-width: 100px; /* Reduced maximum width */

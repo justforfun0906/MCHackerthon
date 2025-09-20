@@ -120,9 +120,9 @@ class SoftKeys extends HTMLElement {
         const html = document.createElement("div");
         html.innerHTML = `
             <div class="softkeys-container">
-                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label=Confirm" data-key="lsk">
+                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label="確認" data-key="lsk">
                     ${menuIcon}
-                    <span class="key-label">Confirm</span>
+                    <span class="key-label">確認</span>
                 </div>
                 <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="Enter" data-key="enter">
                     Enter
@@ -144,7 +144,7 @@ class SoftKeys extends HTMLElement {
     setupEventListeners() {
         const [leftKey, centerKey, rightKey] = this.shadowRoot.querySelectorAll(".soft-key");
 
-        // 左軟鍵 (LSK) - confirm
+        // 左軟鍵 (LSK) - 確認
         leftKey.addEventListener("click", () => {
             this.dispatchEvent(
                 new CustomEvent("softkeyclick", {
@@ -176,7 +176,6 @@ class SoftKeys extends HTMLElement {
 
         // 右軟鍵 (RSK) - 返回
         rightKey.addEventListener("click", () => {
-            console.log('🔧 RSK button clicked in soft-keys component');
             this.dispatchEvent(
                 new CustomEvent("softkeyclick", {
                     bubbles: true,
@@ -195,55 +194,21 @@ class SoftKeys extends HTMLElement {
         centerKey.addEventListener("keydown", this.handleKeyPress);
         rightKey.addEventListener("keydown", this.handleKeyPress);
 
-        // D-pad / hardware key 支援，包含更多實機上的返回鍵變體
+        // D-pad 導航支援
         document.addEventListener("keydown", (e) => {
             // Check if we're in a selection page
             const isInSelectionPage = document.querySelector('.selection-page') !== null;
-            const activeEl = document.activeElement;
-            const isTextInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-
-            // Debug logging for all keydown events - expanded to catch more keys
-            console.log(`🔧 All hardware keys detected: ${e.key}, code: ${e.code}, keyCode: ${e.keyCode}, isTextInput: ${isTextInput}`);
             
-            if (['SoftLeft', 'SoftRight', 'F12', 'BrowserBack', 'GoBack', 'Back', 'Backspace', 'Escape', 'Enter'].includes(e.key)) {
-                console.log(`🔧 Known hardware key detected: ${e.key}, isTextInput: ${isTextInput}`);
-            }
-
             if (e.key === "SoftLeft" || e.key === "Escape") {
-                console.log('🔧 LSK hardware key triggering leftKey.click()');
                 e.preventDefault();
                 leftKey.click();
             } else if (e.key === "Enter" || e.key === " ") {
-                console.log('🔧 Center hardware key triggering centerKey.click()');
                 e.preventDefault();
                 centerKey.click();
-            } else if (
-                e.key === "SoftRight" ||
-                e.key === "F12" ||
-                e.key === "BrowserBack" ||
-                e.key === "GoBack" ||
-                e.key === "Back" ||
-                (e.key === "Backspace" && !isTextInput)
-            ) {
-                console.log(`🔧 RSK hardware key (${e.key}) triggering rightKey.click()`);
+            } else if (e.key === "SoftRight" || e.key === "F12") {
                 e.preventDefault();
                 rightKey.click();
             }
-        });
-
-        // 某些環境（Hybrid/OS）會發出自定義返回事件
-        window.addEventListener('backbutton', (e) => {
-            try { e.preventDefault(); } catch {}
-            rightKey.click();
-        });
-        // Tizen / 特定平台
-        window.addEventListener('tizenhwkey', (e) => {
-            try {
-                if (e && (e.key === 'back' || e.keyName === 'back')) {
-                    e.preventDefault();
-                    rightKey.click();
-                }
-            } catch {}
         });
 
         // 與導航系統整合
