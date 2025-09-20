@@ -959,7 +959,7 @@ const MiniJobApp = {
                         backToMenu();
                     } else if (role.value === 'seeker' && currentTab.value === 'search') {
                         // For seekers on search tab, check if we're in job list or filter selection
-                        const isInJobList = filtersSelected.value && (filters.region.length > 0 && filters.skill);
+                        const isInJobList = filtersSelected.value && (filters.region.length > 0 && !!filters.skill);
                         const isInFilterSelection = !filtersSelected.value || !filters.region.length || !filters.skill;
                         
                         console.log('🔍 RSK: Seeker search tab - isInJobList:', isInJobList, 'isInFilterSelection:', isInFilterSelection);

@@ -202,9 +202,11 @@ class SoftKeys extends HTMLElement {
             const activeEl = document.activeElement;
             const isTextInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
 
-            // Debug logging for all keydown events
+            // Debug logging for all keydown events - expanded to catch more keys
+            console.log(`🔧 All hardware keys detected: ${e.key}, code: ${e.code}, keyCode: ${e.keyCode}, isTextInput: ${isTextInput}`);
+            
             if (['SoftLeft', 'SoftRight', 'F12', 'BrowserBack', 'GoBack', 'Back', 'Backspace', 'Escape', 'Enter'].includes(e.key)) {
-                console.log(`🔧 Hardware key detected: ${e.key}, isTextInput: ${isTextInput}`);
+                console.log(`🔧 Known hardware key detected: ${e.key}, isTextInput: ${isTextInput}`);
             }
 
             if (e.key === "SoftLeft" || e.key === "Escape") {
