@@ -35,6 +35,81 @@
     border: 2px solid #fff !important; /* White border for extra contrast */
 }
 
+/* Selection Page Styles */
+.selection-page {
+    padding: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.selection-list {
+    flex: 1;
+    max-height: 180px; /* Set height for scrolling */
+    overflow-y: auto; /* Enable vertical scrolling */
+    margin-bottom: 8px;
+}
+
+.selection-item {
+    background: #333; /* Dark grey background */
+    border: 1px solid #fff; /* High contrast border */
+    border-radius: 4px;
+    padding: 8px; /* Better padding for QVGA */
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px; /* QVGA Body size */
+    min-height: 24px; /* Ensure adequate touch target */
+    color: #fff; /* Pure white text */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selection-item:hover {
+    background: #555; /* Lighter grey on hover */
+    border-color: #00ff00; /* Green border on hover */
+}
+
+.selection-item.focused {
+    background: #555; /* Focused state */
+    border-color: #00ff00; /* Green border for focus */
+    outline: 2px solid #00ff00; /* Additional focus indicator */
+    outline-offset: 1px;
+}
+
+.selection-item.selected {
+    background: #004400; /* Dark green for selected */
+    border-color: #00ff00; /* Bright green border */
+}
+
+.selection-item.selected.focused {
+    background: #006600; /* Lighter green when both selected and focused */
+}
+
+.option-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.checkmark {
+    color: #00ff00; /* Bright green checkmark */
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.selection-hint {
+    font-size: 12px;
+    color: #ccc;
+    text-align: center;
+    margin-top: 8px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+}
+
 /* Grid-based layout for better space utilization - No scroll */
 .job-grid {
     display: grid;
@@ -604,31 +679,35 @@ select option {
 .job-section::-webkit-scrollbar,
 .job-list::-webkit-scrollbar,
 .post-form::-webkit-scrollbar,
-.filter-bar::-webkit-scrollbar {
-    width: 6px;
+.filter-bar::-webkit-scrollbar,
+.selection-list::-webkit-scrollbar {
+    width: 4px;
 }
 
 .job-section::-webkit-scrollbar-track,
 .job-list::-webkit-scrollbar-track,
 .post-form::-webkit-scrollbar-track,
-.filter-bar::-webkit-scrollbar-track {
+.filter-bar::-webkit-scrollbar-track,
+.selection-list::-webkit-scrollbar-track {
     background: rgba(255,255,255,0.1);
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .job-section::-webkit-scrollbar-thumb,
 .job-list::-webkit-scrollbar-thumb,
 .post-form::-webkit-scrollbar-thumb,
-.filter-bar::-webkit-scrollbar-thumb {
+.filter-bar::-webkit-scrollbar-thumb,
+.selection-list::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.5);
-    border-radius: 3px;
+    border-radius: 2px;
     border: 1px solid #fff;
 }
 
 .job-section::-webkit-scrollbar-thumb:hover,
 .job-list::-webkit-scrollbar-thumb:hover,
 .post-form::-webkit-scrollbar-thumb:hover,
-.filter-bar::-webkit-scrollbar-thumb:hover {
+.filter-bar::-webkit-scrollbar-thumb:hover,
+.selection-list::-webkit-scrollbar-thumb:hover {
     background: rgba(255,255,255,0.8);
 }
 

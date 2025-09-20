@@ -31,32 +31,50 @@ const MiniJobApp = {
 
             <!-- Search Jobs -->
             <template v-else-if="currentTab === 'search' && role === 'seeker'">
-            <!-- Step 1: Region and Skill Selection -->
+            <!-- Step 1: Selection Flow -->
             <template v-if="!filtersSelected">
-                <div class="filter-selection-page">
-                <div class="section-title">Select your preferences</div>
-                <div class="filter-form">
-                    <div class="field-row">
-                    <label>Region</label>
-                    <select v-model="filters.region" required>
-                        <option value="" disabled>Select Region</option>
-                        <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
-                    </select>
+                <!-- Main selection menu -->
+                <template v-if="selectionFlow === 'menu'">
+                    <div class="filter-selection-page">
+                        <div class="section-title">Select your preferences</div>
+                        <div class="job-list">
+                            <div class="job-item" @click="startRegionSelection">
+                                <span>Regions: {{ regionDisplayText }}</span>
+                                <span v-if="filters.region.length">✓</span>
+                            </div>
+                            <div class="job-item" @click="startSkillSelection">
+                                <span>Skill: {{ filters.skill || 'Not selected' }}</span>
+                                <span v-if="filters.skill">✓</span>
+                            </div>
+                            <div class="job-item" v-if="filters.region.length && filters.skill" @click="proceedToJobList">
+                                <span>Search Jobs</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="field-row">
-                    <label>Skill</label>
-                    <select v-model="filters.skill" required>
-                        <option value="" disabled>Select Skill</option>
-                        <option v-for="s in skills" :key="s" :value="s">{{ s }}</option>
-                    </select>
-                    </div>
-                    <div class="field-row">
-                    <button class="modal-btn search-btn" @click="proceedToJobList" :disabled="!filters.region || !filters.skill">
-                        Search Jobs
-                    </button>
-                    </div>
-                </div>
-                </div>
+                </template>
+                
+                <!-- Region selection page -->
+                <template v-else-if="selectionFlow === 'region'">
+                    <selection-page
+                        selection-type="region"
+                        :options="regions"
+                        :selected-value="filters.region"
+                        :multi-select="true"
+                        @selected="onSelectionMade"
+                        @back="backToMenu"
+                    ></selection-page>
+                </template>
+                
+                <!-- Skill selection page -->
+                <template v-else-if="selectionFlow === 'skill'">
+                    <selection-page
+                        selection-type="skill"
+                        :options="skills"
+                        :selected-value="filters.skill"
+                        @selected="onSelectionMade"
+                        @back="backToMenu"
+                    ></selection-page>
+                </template>
             </template>
             
             <!-- Step 2: Job Listing (after filters selected) -->
@@ -166,7 +184,8 @@ const MiniJobApp = {
         Modal,
         FilterBar,
         PhoneMock,
-        PostForm
+        PostForm,
+        SelectionPage
     },
     setup() {
         const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
@@ -181,6 +200,8 @@ const MiniJobApp = {
         const modalMessage = ref('');
         const currentTime = ref('00:00');
         const filtersSelected = ref(false); // Track if region/skill filters are set
+        const showSelectionPage = ref(null); // 'region' | 'skill' | null
+        const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
 
         // Dictionaries (EN)
         const regions = ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'];
@@ -195,8 +216,8 @@ const MiniJobApp = {
         const applyLoading = ref(false);
         const applyingDone = ref(false);
 
-        // Filters
-        const filters = reactive({ region: '', skill: '' });
+        // Filters - regions is now an array for multi-select
+        const filters = reactive({ region: [], skill: '' });
         const normalizeRoles = (val) => {
         if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
         if (typeof val === 'string') return [val];
@@ -208,7 +229,8 @@ const MiniJobApp = {
             j.roles = normalizeRoles(j.roles);
             Object.defineProperty(j, '_normalizedRoles', { value: true, enumerable: false });
             }
-            const regionOk = !filters.region || j.region === filters.region;
+            // Region filtering: check if job region is in selected regions array
+            const regionOk = !filters.region.length || filters.region.includes(j.region);
             const skillOk = !filters.skill || (Array.isArray(j.roles) && j.roles.indexOf(filters.skill) !== -1);
             const countOk = (j.count ?? 0) > 0;
             return regionOk && skillOk && countOk;
@@ -226,6 +248,14 @@ const MiniJobApp = {
         if (role.value === 'seeker') return [ { key: 'search', label: 'Jobs' } ];
         if (role.value === 'employer') return [ { key: 'mine', label: 'My Jobs' } ]; // Removed Post tab
         return [];
+        });
+
+        // Display text for selected regions
+        const regionDisplayText = computed(() => {
+            if (!filters.region.length) return 'Not selected';
+            if (filters.region.length === 1) return filters.region[0];
+            if (filters.region.length === 2) return filters.region.join(', ');
+            return `${filters.region.length} regions selected`;
         });
 
         // Header state
@@ -454,20 +484,56 @@ const MiniJobApp = {
         if (r === 'seeker') {
             currentTab.value = 'search';
             filtersSelected.value = false; // Reset filter selection for seekers
+            selectionFlow.value = 'menu'; // Reset to menu
+            // Reset filters
+            filters.region = [];
+            filters.skill = '';
         } else if (r === 'employer') {
             currentTab.value = 'post'; // Default to post form for employers
         }
         };
 
         const proceedToJobList = () => {
-        if (filters.region && filters.skill) {
+        if (filters.region.length && filters.skill) {
             filtersSelected.value = true;
         }
+        };
+
+        // New selection flow functions
+        const startRegionSelection = () => {
+            selectionFlow.value = 'region';
+        };
+
+        const startSkillSelection = () => {
+            selectionFlow.value = 'skill';
+        };
+
+        const onSelectionMade = (selection) => {
+            if (selection.type === 'region') {
+                if (selection.multiSelect) {
+                    filters.region = Array.isArray(selection.value) ? selection.value : [];
+                    // Only go back to menu if it's a finished selection (Escape pressed)
+                    if (selection.finished) {
+                        selectionFlow.value = 'menu';
+                    }
+                } else {
+                    filters.region = [selection.value];
+                    selectionFlow.value = 'menu';
+                }
+            } else if (selection.type === 'skill') {
+                filters.skill = selection.value;
+                selectionFlow.value = 'menu';
+            }
+        };
+
+        const backToMenu = () => {
+            selectionFlow.value = 'menu';
         };
 
         const backToFilterSelection = () => {
         filtersSelected.value = false;
         selectedJob.value = null;
+        selectionFlow.value = 'menu'; // Reset to menu
         };
 
         const closeModal = () => { 
@@ -576,12 +642,15 @@ const MiniJobApp = {
         currentTime,
         jobs,
         filtersSelected,
+        selectionFlow,
+        showSelectionPage,
         regions,
         roles,
         storeTypes,
         timeSlots,
         skills,
         filters,
+        regionDisplayText,
         filteredJobs,
         myJobs,
         navTabs,
@@ -605,6 +674,10 @@ const MiniJobApp = {
         switchTab,
         chooseRole,
         proceedToJobList,
+        startRegionSelection,
+        startSkillSelection,
+        onSelectionMade,
+        backToMenu,
         backToFilterSelection,
         onLoginSuccess,
         onMockVerified,
