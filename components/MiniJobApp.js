@@ -31,6 +31,7 @@ const MiniJobApp = {
                 <div class="job-list">
                 <div class="job-item" @click="chooseEmployerAction('post')">Post New Jobs</div>
                 <div class="job-item" @click="chooseEmployerAction('mine')">My Jobs</div>
+                <div class="job-item" @click="chooseEmployerAction('inbox')">Inbox ({{ applications.length }})</div>
                 </div>
             </div>
             </template>
@@ -141,6 +142,27 @@ const MiniJobApp = {
                 </div>
             </template>
             </template>
+
+            <!-- Employer: Inbox -->
+            <template v-else-if="role === 'employer' && employerChoice === 'inbox'">
+            <template v-if="!selectedApplicant">
+                <inbox-page :applications="applications" @select-applicant="viewApplicant"></inbox-page>
+            </template>
+            <template v-else>
+                <div class="inline-job-panel full scrollable" tabindex="0">
+                <div class="panel-title">Applicant Details</div>
+                <div class="panel-line">Name: {{ selectedApplicant.applicantName || 'Anonymous' }}</div>
+                <div class="panel-line">Phone: {{ selectedApplicant.phone || 'Not provided' }}</div>
+                <div class="panel-line">Applied for: {{ selectedApplicant.jobTitle }}</div>
+                <div class="panel-line">Applied at: {{ formatApplicationTime(selectedApplicant.appliedAt) }}</div>
+                <div v-if="selectedApplicant.experience" class="panel-line">Experience: {{ selectedApplicant.experience }}</div>
+                <div v-if="selectedApplicant.skills" class="panel-line">Skills: {{ selectedApplicant.skills }}</div>
+                <div v-if="selectedApplicant.notes" class="panel-line">Notes: {{ selectedApplicant.notes }}</div>
+                <!-- Actions moved to soft keys: LSK = Contact, RSK = Close -->
+                <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
+                </div>
+            </template>
+            </template>
         </div>
         <bottom-nav 
             v-if="role"
@@ -172,7 +194,8 @@ const MiniJobApp = {
         PostForm,
         SelectionPage,
         UserProfile,
-        SoftKeys
+        SoftKeys,
+        InboxPage
     },
     setup() {
     const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
@@ -181,8 +204,10 @@ const MiniJobApp = {
         // State
         const mockVerified = ref(false);
         const role = ref(null); // 'seeker' | 'employer'
-        const currentTab = ref('search'); // 'search' | 'post' | 'mine' | 'profile'
+        const currentTab = ref('search'); // 'search' | 'post' | 'mine' | 'profile' | 'inbox'
         const selectedJob = ref(null);
+        const selectedApplicant = ref(null);
+        const applications = ref([]); // Store job applications
         const showModal = ref(false);
         const modalTitle = ref('');
         const modalMessage = ref('');
@@ -190,7 +215,7 @@ const MiniJobApp = {
         const filtersSelected = ref(false); // Track if region/skill filters are set
         const showSelectionPage = ref(null); // 'region' | 'skill' | null
         const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
-        const employerChoice = ref(null); // 'post' | 'mine' | null - for employer role selection
+        const employerChoice = ref(null); // 'post' | 'mine' | 'inbox' | null - for employer role selection
         const userId = ref('');
 
         // Dictionaries (EN)
@@ -264,6 +289,7 @@ const MiniJobApp = {
 
         // Firestore subscribe
         let unsubscribe = null;
+        let unsubscribeApplications = null;
         const startSubscribe = () => {
         if (!window.db) {
             modalTitle.value = 'Connection failed';
@@ -271,6 +297,8 @@ const MiniJobApp = {
             showModal.value = true;
             return;
         }
+        
+        // Subscribe to jobs
         const col = window.db.collection('jobs');
         unsubscribe = col.orderBy('createdAt', 'desc').onSnapshot(snap => {
             console.log('📊 Firestore snapshot received, size:', snap.size);
@@ -294,6 +322,19 @@ const MiniJobApp = {
             console.log('📊 Updated jobs array, old count:', oldJobCount, 'new count:', jobs.value.length);
             console.log('📊 Current job IDs:', jobs.value.map(j => j.id));
         }, err => console.error('[Firestore] onSnapshot error', err));
+        
+        // Subscribe to applications
+        const applicationsCol = window.db.collection('applications');
+        unsubscribeApplications = applicationsCol.orderBy('appliedAt', 'desc').onSnapshot(snap => {
+            console.log('📨 Applications snapshot received, size:', snap.size);
+            const arr = [];
+            snap.forEach(doc => {
+                const data = { ...doc.data(), id: doc.id };
+                arr.push(data);
+            });
+            applications.value = arr;
+            console.log('📨 Updated applications array, count:', applications.value.length);
+        }, err => console.error('[Firestore] applications onSnapshot error', err));
         };
 
         // Actions
@@ -312,18 +353,36 @@ const MiniJobApp = {
         };
         const closePanel = () => {
         selectedJob.value = null;
+        selectedApplicant.value = null;
         inlineMessage.value = '';
         applyingDone.value = false;
         
-        // For employers, return to post form instead of my jobs list
-        if (role.value === 'employer') {
-            currentTab.value = 'post';
+        // For employers, stay in current context (don't change currentTab)
+        // For seekers, ensure we stay on the job listing
+        if (role.value === 'seeker') {
+            filtersSelected.value = true;
         }
         
         // Update navigation when panel is closed
         if (window.navigationService) {
             window.navigationService.updateFocusableElements();
         }
+        };
+
+        const viewApplicant = (applicant) => {
+            selectedApplicant.value = applicant;
+            inlineMessage.value = '';
+            
+            // Update navigation when applicant is selected
+            if (window.navigationService) {
+                window.navigationService.updateFocusableElements();
+            }
+        };
+
+        const formatApplicationTime = (timestamp) => {
+            if (!timestamp) return 'Unknown';
+            const date = new Date(timestamp);
+            return date.toLocaleString();
         };
 
         const addJob = async (payload) => {
@@ -413,6 +472,19 @@ const MiniJobApp = {
             if (!window.firebase || !window.db) throw new Error('Firebase is not initialized');
             if (!job || !job.id) throw new Error('Invalid data: missing job ID');
             if (!Array.isArray(job.roles)) job.roles = normalizeRoles(job.roles);
+            
+            // Create application record
+            const applicationData = {
+                jobId: job.id,
+                jobTitle: `${job.region} - ${job.storeType} (${job.roles.join(', ')})`,
+                applicantName: 'Demo User', // In a real app, this would come from user profile
+                phone: userId.value || 'Not provided',
+                appliedAt: Date.now(),
+                experience: 'Entry level', // Could be from user profile
+                skills: job.roles[0], // Take first role as skill
+                notes: 'Applied through mobile app'
+            };
+            
             const docRef = window.db.collection('jobs').doc(job.id);
             await window.db.runTransaction(async (tx) => {
             const snap = await tx.get(docRef);
@@ -423,7 +495,17 @@ const MiniJobApp = {
             const curr = data.count || 0;
             if (curr <= 0) throw new Error('This job is full');
             tx.update(docRef, { count: window.firebase.firestore.FieldValue.increment(-1) });
+            
+            // Store application in Firestore
+            await window.db.collection('applications').add(applicationData);
             });
+            
+            // Add to local applications array for immediate UI update
+            applications.value.unshift({
+                id: Date.now().toString(),
+                ...applicationData
+            });
+            
             if (role.value === 'seeker') {
             inlineMessage.value = 'Applied successfully (demo: employer notified)';
             applyingDone.value = true;
@@ -476,6 +558,8 @@ const MiniJobApp = {
             currentTab.value = 'post';
         } else if (action === 'mine') {
             currentTab.value = 'mine';
+        } else if (action === 'inbox') {
+            currentTab.value = 'inbox';
         }
         };
 
@@ -625,14 +709,15 @@ const MiniJobApp = {
             return;
         }
         // (Handled above) Seeker selection flow
-        if (selectedJob.value) {
-            // Return from job detail view to job list
+        if (selectedJob.value || selectedApplicant.value) {
+            // Return from job detail view or applicant detail view to list
             selectedJob.value = null;
+            selectedApplicant.value = null;
             if (role.value === 'seeker') {
                 // For seekers, ensure we stay on the job listing
                 filtersSelected.value = true;
             } else if (role.value === 'employer') {
-                // For employers, stay in current employer choice (post or mine)
+                // For employers, stay in current employer choice (post, mine, or inbox)
             }
         } else if (role.value === 'seeker' && filtersSelected.value) {
             // Return from job listing to filter selection page
@@ -645,6 +730,7 @@ const MiniJobApp = {
             role.value = null;
             currentTab.value = 'search';
             selectedJob.value = null;
+            selectedApplicant.value = null;
             filters.region = '';
             filters.skill = '';
             filtersSelected.value = false;
@@ -679,15 +765,20 @@ const MiniJobApp = {
                         if (profileRef.value && typeof profileRef.value.save === 'function') {
                             profileRef.value.save();
                         }
-                    } else if (selectedJob.value) {
-                        console.log('🎯 Job selected, role is:', role.value);
-                        if (role.value === 'seeker') {
-                            console.log('🎯 Seeker - apply functionality removed');
-                            // Apply functionality removed - do nothing
-                        } else if (role.value === 'employer') {
-                            console.log('🎯 Employer - calling deleteSelected');
+                    } else if (selectedJob.value || selectedApplicant.value) {
+                        console.log('🎯 Job or applicant selected, role is:', role.value);
+                        if (role.value === 'seeker' && selectedJob.value) {
+                            console.log('🎯 Seeker applying for job');
+                            // Seeker: LSK triggers apply
+                            applyJob(selectedJob.value);
+                        } else if (role.value === 'employer' && selectedJob.value) {
+                            console.log('🎯 Employer with job - calling deleteSelected');
                             // Employer: LSK triggers delete confirmation
                             deleteSelected();
+                        } else if (role.value === 'employer' && selectedApplicant.value) {
+                            console.log('🎯 Employer with applicant - contact action');
+                            // Employer viewing applicant: LSK for contact action
+                            inlineMessage.value = `Contact ${selectedApplicant.value.applicantName || 'applicant'} at ${selectedApplicant.value.phone || 'phone not available'}`;
                         }
                     } else if (!role.value) {
                         // Role selection page - trigger the currently focused element
@@ -723,8 +814,8 @@ const MiniJobApp = {
                 case 'rsk': // Right Soft Key - Return
                     if (showModal.value) {
                         closeModal();
-                    } else if (selectedJob.value) {
-                        // Back to list from job detail
+                    } else if (selectedJob.value || selectedApplicant.value) {
+                        // Back to list from job detail or applicant detail
                         closePanel();
                     } else if (currentTab.value === 'profile') {
                         handleReturn();
@@ -852,9 +943,16 @@ const MiniJobApp = {
                         right: 'Back'
                     });
                 } else if (selectedJob.value && role.value === 'employer') {
-                    // Job details page for employers - show default
+                    // Job details page for employers - show Delete
                     softKeysElement.updateLabels({
-                        left: 'Confirm',
+                        left: 'Delete',
+                        center: 'Enter',
+                        right: 'Back'
+                    });
+                } else if (selectedApplicant.value && role.value === 'employer') {
+                    // Applicant details page for employers - show Contact
+                    softKeysElement.updateLabels({
+                        left: 'Contact',
                         center: 'Enter',
                         right: 'Back'
                     });
@@ -966,6 +1064,7 @@ const MiniJobApp = {
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
         if (typeof unsubscribe === 'function') unsubscribe(); 
+        if (typeof unsubscribeApplications === 'function') unsubscribeApplications(); 
         if (window.navigationService) {
             window.navigationService.deactivate();
         }
@@ -993,6 +1092,8 @@ const MiniJobApp = {
         mockVerified,
         currentTab,
         selectedJob,
+        selectedApplicant,
+        applications,
         inlineMessage,
         applyLoading,
         applyingDone,
@@ -1019,6 +1120,8 @@ const MiniJobApp = {
         leftSoftKey,
         rightSoftKey,
         viewJob,
+        viewApplicant,
+        formatApplicationTime,
         addJob,
         deleteJob,
         deleteSelected,

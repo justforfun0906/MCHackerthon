@@ -18,15 +18,20 @@ const PostForm = {
             </div>
             <div class="field-row">
                 <label>Address</label>
-                <input type="text" v-model="form.address" placeholder="Enter address" class="address-input" />
+                <input 
+                    type="text" 
+                    v-model="form.address" 
+                    placeholder="Enter address" 
+                    class="address-input"
+                    @input="handleAddressInput"
+                />
             </div>
             <div class="field-row">
-                <label>Roles</label>
-                <div class="checkbox-row">
-                    <label v-for="r in roles" :key="r" class="checkbox-item">
-                        <input type="checkbox" :value="r" v-model="form.roles" class="role-checkbox" /> {{ r }}
-                    </label>
-                </div>
+                <label>Role</label>
+                <select v-model="form.role" required class="role-select" @keydown="handleSelectKeydown" ref="roleSelect">
+                    <option value="" disabled>Select Role</option>
+                    <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
+                </select>
             </div>
             <div class="field-row">
                 <label>Time Slot</label>
@@ -37,18 +42,32 @@ const PostForm = {
             </div>
             <div class="field-row">
                 <label>Openings</label>
-                <input type="number" v-model.number="form.count" min="1" max="20" required class="count-input" />
+                <input 
+                    type="number" 
+                    v-model.number="form.count" 
+                    min="1" 
+                    max="20" 
+                    required 
+                    class="count-input"
+                    @input="handleCountInput"
+                />
             </div>
             <div class="field-row">
                 <label>Notes</label>
-                <textarea v-model="form.note" placeholder="Enter job notes..." rows="3" class="note-textarea"></textarea>
-            </div>
-            <div class="field-row">
-                <button type="submit" class="modal-btn post-btn">Post Job</button>
+                <textarea 
+                    v-model="form.note" 
+                    placeholder="Enter job notes..." 
+                    rows="3" 
+                    class="note-textarea"
+                    @input="handleTextareaInput"
+                    @keydown="handleTextareaKeydown"
+                ></textarea>
             </div>
         </form>
     `,
     props: {
+        userId: { type: String, default: '' },
+        userKey: { type: String, default: '' },
         regions: { type: Array, default: () => [] },
         roles: { type: Array, default: () => [] },
         storeTypes: { type: Array, default: () => [] },
@@ -61,11 +80,13 @@ const PostForm = {
                 region: '',
                 storeType: '',
                 address: '',
-                roles: [],
+                role: '',
                 time: '',
                 count: 1,
                 note: ''
-            }
+            },
+            cacheKey: 'postDraft',
+            cacheTimer: null
         };
     },
     methods: {
@@ -79,26 +100,84 @@ const PostForm = {
                 select.click();
             }
         },
+        handleConfirm() {
+            // Called when confirm action is triggered
+            this.onSubmit();
+        },
+        handleTextareaInput(event) {
+            // Ensure the textarea value is properly updated
+            this.form.note = event.target.value;
+        },
+        handleAddressInput(event) {
+            // Ensure the address input value is properly updated
+            this.form.address = event.target.value;
+        },
+        handleCountInput(event) {
+            // Ensure the count input value is properly updated
+            this.form.count = parseInt(event.target.value) || 1;
+        },
+        handleTextareaKeydown(event) {
+            // Allow normal typing and navigation within textarea
+            // Don't prevent default for most keys to allow normal text input
+            if (event.key === 'Enter' && event.ctrlKey) {
+                // Allow Ctrl+Enter to submit if needed
+                event.preventDefault();
+                this.handleConfirm();
+            }
+            // Let other keys work normally for text input
+        },
         onSubmit() {
-            if (!this.form.region || !this.form.storeType || !this.form.time || this.form.roles.length === 0) return;
+            if (!this.form.region || !this.form.storeType || !this.form.time || !this.form.role) return;
             const payload = {
                 region: this.form.region,
                 storeType: this.form.storeType,
                 address: this.form.address,
-                roles: [...this.form.roles],
+                role: this.form.role,
                 time: this.form.time,
                 count: this.form.count,
                 note: this.form.note
             };
             this.$emit('submit', payload);
+            // Clear cache on successful submit
+            try { localStorage.removeItem(this.cacheKey); } catch {}
             // reset form
             this.form.region = '';
             this.form.storeType = '';
             this.form.address = '';
-            this.form.roles = [];
+            this.form.role = '';
             this.form.time = '';
             this.form.count = 1;
             this.form.note = '';
         }
+    },
+    mounted() {
+        // Scope cache key by userKey (hashed)
+        try { this.cacheKey = `postDraft:${this.userKey || 'anon'}`; } catch {}
+        // Migrate legacy userId-scoped draft to userKey-scoped
+        try {
+            const legacyKey = `postDraft:${this.userId || 'anon'}`;
+            const legacy = localStorage.getItem(legacyKey);
+            if (legacy && !localStorage.getItem(this.cacheKey)) {
+                localStorage.setItem(this.cacheKey, legacy);
+                try { localStorage.removeItem(legacyKey); } catch {}
+            }
+        } catch {}
+        // Load cached draft if any
+        try {
+            const raw = localStorage.getItem(this.cacheKey);
+            if (raw) {
+                const obj = JSON.parse(raw);
+                if (obj && obj.form) {
+                    this.form = { ...this.form, ...obj.form };
+                }
+            }
+        } catch {}
+        // Watch form changes and cache with debounce
+        this.$watch(() => this.form, () => {
+            try { if (this.cacheTimer) clearTimeout(this.cacheTimer); } catch {}
+            this.cacheTimer = setTimeout(() => {
+                try { localStorage.setItem(this.cacheKey, JSON.stringify({ form: this.form, ts: Date.now() })); } catch {}
+            }, 300);
+        }, { deep: true });
     }
 };
