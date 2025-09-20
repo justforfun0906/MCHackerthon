@@ -102,3 +102,4 @@ Simply open `index.html` in any modern web browser. No build process or server r
 This project demonstrates a clean, modular Vue.js application structure that's both maintainable and perfectly suited for GitHub Pages deployment.
 
 bababoy
+bababoy3
