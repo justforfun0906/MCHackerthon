@@ -94,7 +94,7 @@ const MiniJobApp = {
                 ></job-section>
                 </template>
                 <template v-else>
-                <div class="inline-job-panel full">
+                <div class="inline-job-panel full scrollable" tabindex="0">
                     <div class="panel-title">Job Details</div>
                     <div class="panel-line">Region: {{ selectedJob.region }}</div>
                     <div class="panel-line">Type: {{ selectedJob.storeType }}</div>
@@ -104,6 +104,7 @@ const MiniJobApp = {
                     <div class="panel-actions">
                     <!-- Apply and Back to list now controlled by soft keys -->
                     </div>
+                    <!-- Actions moved to soft keys: LSK = Confirm (Apply), RSK = Close -->
                     <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
                 </div>
                 </template>
@@ -127,7 +128,7 @@ const MiniJobApp = {
                 <job-section :jobs="myJobs" @select-job="viewJob"></job-section>
             </template>
             <template v-else>
-                <div class="inline-job-panel full">
+                <div class="inline-job-panel full scrollable" tabindex="0">
                 <div class="panel-title">Job Details</div>
                 <div class="panel-line">Region: {{ selectedJob.region }}</div>
                 <div class="panel-line">Type: {{ selectedJob.storeType }}</div>
@@ -142,6 +143,7 @@ const MiniJobApp = {
                     </button>
                     <!-- Back to list now controlled by soft keys -->
                 </div>
+                <!-- Actions moved to soft keys: LSK = Confirm (Delete), RSK = Close -->
                 <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
                 </div>
             </template>
@@ -585,15 +587,16 @@ const MiniJobApp = {
             
             switch (key) {
                 case 'lsk': // Left Soft Key - Confirm
-                    if (selectedJob.value) {
+                    if (showModal.value) {
+                        // Confirm current modal action (e.g., delete)
+                        confirmAction();
+                    } else if (selectedJob.value) {
                         if (role.value === 'seeker') {
                             applySelected();
                         } else if (role.value === 'employer') {
-                            // For employers, LSK could be used for other actions
-                            console.log('LSK pressed on job detail');
+                            // Employer: LSK triggers delete confirmation
+                            deleteSelected();
                         }
-                    } else if (showModal.value) {
-                        confirmAction();
                     } else if (!role.value) {
                         // Role selection page - trigger the currently focused element
                         if (window.navigationService) {
@@ -780,11 +783,37 @@ const MiniJobApp = {
         if (window.navigationService) {
             window.navigationService.setCallbacks({
             onEscape: () => {
-                // Left Soft Key - no action needed
+                // Map ESC (LSK) to context-aware action
+                if (showModal.value) {
+                    // Confirm in modal
+                    confirmAction();
+                } else if (selectedJob.value) {
+                    if (role.value === 'seeker') {
+                        applySelected();
+                    } else if (role.value === 'employer') {
+                        deleteSelected();
+                    }
+                } else if (role.value === 'employer' && showMyJobsButton.value) {
+                    // Toggle between Post and My Jobs for employers
+                    handleMyJobs();
+                } else if (role.value === 'seeker' && !filtersSelected.value) {
+                    // Seeker in preference selection: smart proceed
+                    if (filters.region.length && filters.skill) {
+                        proceedToJobList();
+                    } else if (filters.region.length && !filters.skill) {
+                        startSkillSelection();
+                    } else {
+                        startRegionSelection();
+                    }
+                }
             },
             onBack: () => {
-                // Right Soft Key - Return action  
-                handleReturn();
+                // Map F12/Back (RSK) to cancel/return
+                if (showModal.value) {
+                    closeModal();
+                } else {
+                    handleReturn();
+                }
             }
             });
             

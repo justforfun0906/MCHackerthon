@@ -5,8 +5,7 @@ const Modal = {
             <div class="modal-content" @click.stop>
                 <div>{{ title }}</div>
                 <div>{{ message }}</div>
-                <button class="modal-btn" @click="confirmAction">confirm</button>
-                <button class="modal-btn" @click="closeModal">close</button>
+                <!-- Actions moved to soft keys: LSK/ESC = confirm, RSK/F12 = close -->
             </div>
         </div>
     `,

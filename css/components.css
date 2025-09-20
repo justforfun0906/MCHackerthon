@@ -708,6 +708,27 @@ select option {
     gap: 8px; 
     margin-top: 12px; /* Better spacing */
 }
+.inline-job-panel .panel-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* two buttons side-by-side */
+    gap: 8px;
+    margin-top: 12px;
+}
+.inline-job-panel .grid-btn {
+    background: #333;
+    border: 2px solid #fff;
+    color: #fff;
+    font-size: 16px;
+    padding: 8px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    min-height: 32px;
+    font-weight: bold;
+}
+.inline-job-panel .grid-btn.confirm { background: #004466; border-color: #0066cc; }
+.inline-job-panel .grid-btn.close { background: #660000; border-color: #aa0000; }
+.inline-job-panel .grid-btn:hover { filter: brightness(1.1); }
+.inline-job-panel .grid-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .inline-job-panel .panel-btn {
     flex: 1;
     background: #667eea;
@@ -736,3 +757,26 @@ select option {
 .inline-job-panel.full { height: 100%; display: flex; flex-direction: column; }
 .inline-job-panel.full .panel-line { flex: 0 0 auto; }
 .inline-job-panel.full .panel-actions { margin-top: auto; }
+
+/* Make inline job detail scrollable when content overflows */
+.inline-job-panel.scrollable {
+    max-height: 180px; /* match other content areas */
+    overflow-y: auto;
+}
+
+/* Scrollbar styling for inline job panel */
+.inline-job-panel.scrollable::-webkit-scrollbar {
+    width: 4px;
+}
+.inline-job-panel.scrollable::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+}
+.inline-job-panel.scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.5);
+    border-radius: 2px;
+    border: 1px solid #fff;
+}
+.inline-job-panel.scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.8);
+}
