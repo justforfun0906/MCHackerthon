@@ -969,7 +969,12 @@ const MiniJobApp = {
                     break;
                     
                 case 'enter': // Center key - 不觸發任何動作
+                    console.log('🔍 ENTER pressed');
                     // 中心鍵現在只是視覺指示器，不觸發任何動作
+                    break;
+                    
+                default:
+                    console.log('🔍 Unknown key pressed:', key);
                     break;
             }
         };
@@ -1320,6 +1325,8 @@ const MiniJobApp = {
         startSkillSelection,
         onSelectionMade,
         backToMenu,
+        backFromRegion,
+        backFromSkill,
         backToFilterSelection,
         onLoginSuccess,
         onMockVerified,
