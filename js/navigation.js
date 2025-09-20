@@ -14,6 +14,8 @@ class NavigationService {
     setupKeyListeners() {
         document.addEventListener('keydown', (event) => {
             if (!this.isActive) return;
+            const activeEl = document.activeElement;
+            const isTextInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
             
             switch(event.key) {
                 case 'ArrowUp':
@@ -29,10 +31,12 @@ class NavigationService {
                     }
                     break;
                 case 'ArrowLeft':
+                    if (isTextInput) return; // allow caret move inside inputs
                     event.preventDefault();
                     this.handleHorizontalMove(-1);
                     break;
                 case 'ArrowRight':
+                    if (isTextInput) return; // allow caret move inside inputs
                     event.preventDefault();
                     this.handleHorizontalMove(1);
                     break;
@@ -77,6 +81,9 @@ class NavigationService {
     handleScrollIfNeeded(direction) {
         const el = this.getCurrentFocusElement();
         if (!el) return false;
+        // Never trap scroll inside basic inputs/textarea; let Up/Down change focus
+        const tag = el.tagName && el.tagName.toUpperCase();
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return false;
         
         // Determine if element is vertically scrollable
         const style = window.getComputedStyle(el);
@@ -182,7 +189,9 @@ class NavigationService {
         if (index >= 0 && index < this.focusableElements.length) {
             const element = this.focusableElements[index];
             element.classList.add('dpad-focus');
-            // Restore scrollIntoView for scrollable areas
+            // Ensure the element receives keyboard input
+            try { element.focus({ preventScroll: true }); } catch {}
+            // Keep the element visible within scrollable containers
             element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             this.currentFocusIndex = index;
         }

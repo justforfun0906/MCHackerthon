@@ -42,7 +42,7 @@ const MiniJobApp = {
 
             <!-- Profile Page -->
             <template v-else-if="currentTab === 'profile'">
-            <user-profile :user-id="userId" @back="handleReturn" @saved="onProfileSaved" />
+            <user-profile ref="profileRef" :user-id="userId" @back="handleReturn" @saved="onProfileSaved" />
             </template>
 
             <!-- Search Jobs -->
@@ -190,7 +190,8 @@ const MiniJobApp = {
         SoftKeys
     },
     setup() {
-        const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
+    const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
+    const profileRef = ref(null);
 
         // State
         const mockVerified = ref(false);
@@ -588,6 +589,13 @@ const MiniJobApp = {
 
 
         const handleReturn = () => {
+        // Seeker: never leave the preferences area via generic back
+        if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
+            if (selectionFlow.value !== 'menu') {
+                backToMenu();
+            }
+            return;
+        }
         if (currentTab.value === 'profile') {
             if (role.value === 'seeker') {
                 currentTab.value = 'search';
@@ -598,6 +606,7 @@ const MiniJobApp = {
             }
             return;
         }
+        // (Handled above) Seeker selection flow
         if (selectedJob.value) {
             // Return from job detail view to job list
             selectedJob.value = null;
@@ -635,6 +644,10 @@ const MiniJobApp = {
                     if (showModal.value) {
                         // Confirm current modal action (e.g., delete)
                         confirmAction();
+                    } else if (currentTab.value === 'profile') {
+                        if (profileRef.value && typeof profileRef.value.save === 'function') {
+                            profileRef.value.save();
+                        }
                     } else if (selectedJob.value) {
                         if (role.value === 'seeker') {
                             applySelected();
@@ -679,6 +692,13 @@ const MiniJobApp = {
                     } else if (selectedJob.value) {
                         // Back to list from job detail
                         closePanel();
+                    } else if (currentTab.value === 'profile') {
+                        handleReturn();
+                    } else if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
+                        // In seeker preferences: if in region/skill, go back to menu; if already in menu, do nothing
+                        if (selectionFlow.value !== 'menu') {
+                            backToMenu();
+                        }
                     } else {
                         handleReturn();
                     }
@@ -777,7 +797,13 @@ const MiniJobApp = {
         const updateSoftKeyLabels = () => {
             const softKeysElement = document.querySelector('soft-keys');
             if (softKeysElement) {
-                if (selectedJob.value && role.value === 'seeker') {
+                if (currentTab.value === 'profile') {
+                    softKeysElement.updateLabels({
+                        left: 'Save',
+                        center: 'Enter',
+                        right: 'Back'
+                    });
+                } else if (selectedJob.value && role.value === 'seeker') {
                     // Job details page for seekers - show Apply
                     softKeysElement.updateLabels({
                         left: 'Apply',
@@ -818,7 +844,13 @@ const MiniJobApp = {
             }
         };
 
-        // Lifecycle
+    // Lifecycle
+    const handlePopState = (e) => {
+    try { e && e.preventDefault && e.preventDefault(); } catch {}
+    // Re-push state to keep SPA in place and navigate internally
+    try { history.pushState(null, '', location.href); } catch {}
+    handleReturn();
+    };
         onMounted(() => {
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
@@ -875,6 +907,12 @@ const MiniJobApp = {
             // No direct access; use a fixed demo uid if unknown
             userId.value = 'demo-user';
         } catch {}
+
+        // Trap browser/hardware back button to stay inside SPA
+        try {
+            history.pushState(null, '', location.href);
+            window.addEventListener('popstate', handlePopState);
+        } catch {}
         });
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
@@ -882,13 +920,26 @@ const MiniJobApp = {
         if (window.navigationService) {
             window.navigationService.deactivate();
         }
+        try { window.removeEventListener('popstate', handlePopState); } catch {}
         });
 
         // Helpers
-        const openProfile = () => { currentTab.value = 'profile'; };
+        const openProfile = () => { 
+            currentTab.value = 'profile'; 
+            setTimeout(() => {
+                if (window.navigationService) {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }
+                updateSoftKeyLabels();
+                const nameInput = document.querySelector('.profile-form input#name');
+                try { if (nameInput) nameInput.focus(); } catch {}
+            }, 150);
+        };
 
         // Expose
         return {
+    profileRef,
         role,
         mockVerified,
         currentTab,

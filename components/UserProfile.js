@@ -5,30 +5,25 @@ const UserProfile = {
       <div class="section-title">My Profile</div>
       <div class="field-col">
         <label for="name">Name</label>
-        <input id="name" type="text" v-model="form.name" placeholder="Your name" />
+  <input id="name" type="text" v-model="form.name" placeholder="Your name" tabindex="0" />
       </div>
       <div class="field-col">
         <label for="phone">Phone</label>
-        <input id="phone" type="text" v-model="form.phone" placeholder="e.g. +886912345678" />
+  <input id="phone" type="text" v-model="form.phone" placeholder="e.g. +886912345678" tabindex="0" />
       </div>
       <div class="field-col">
         <label for="address">Address</label>
-        <input id="address" type="text" v-model="form.address" placeholder="Your address" />
+  <input id="address" type="text" v-model="form.address" placeholder="Your address" tabindex="0" />
       </div>
       <div class="field-col">
         <label for="workexp">Work Experience</label>
-        <textarea id="workexp" class="note-textarea" v-model="form.workExperience" placeholder="Brief work experience"></textarea>
+  <textarea id="workexp" class="note-textarea" v-model="form.workExperience" placeholder="Brief work experience" tabindex="0"></textarea>
       </div>
       <div class="field-col">
         <label for="other">Other Contact</label>
-        <input id="other" type="text" v-model="form.contactOther" placeholder="Line/Email/etc." />
+  <input id="other" type="text" v-model="form.contactOther" placeholder="Line/Email/etc." tabindex="0" />
       </div>
-
-      <div class="actions">
-        <button class="modal-btn" :disabled="saving" @click="save">{{ saving ? 'Saving...' : 'Save' }}</button>
-        <button class="modal-btn" @click="$emit('back')">Back</button>
-      </div>
-
+      
       <div class="panel-msg" v-if="message">{{ message }}</div>
     </div>
   `,
@@ -36,8 +31,8 @@ const UserProfile = {
     userId: { type: String, required: true }
   },
   emits: ['back','saved'],
-  setup(props, { emit }) {
-    const { ref, onMounted, watch } = Vue;
+  setup(props, { emit, expose }) {
+    const { ref, onMounted, watch, onUnmounted, nextTick } = Vue;
   const form = ref({ name: '', phone: '', address: '', workExperience: '', contactOther: '' });
     const saving = ref(false);
     const message = ref('');
@@ -92,9 +87,34 @@ const UserProfile = {
       }
     };
 
-    onMounted(loadProfile);
+    const handleKeyDown = (e) => {
+      // Provide basic keyboard control inside profile
+      if (e.key === 'Escape' || e.key === 'SoftRight' || e.key === 'F12') {
+        e.preventDefault();
+        emit('back');
+      } else if (e.key === 'SoftLeft') {
+        e.preventDefault();
+        save();
+      }
+    };
+
+    onMounted(() => {
+      loadProfile();
+      document.addEventListener('keydown', handleKeyDown);
+      // Focus the first input for immediate editing
+      setTimeout(() => {
+        try {
+          const first = document.querySelector('.profile-form input#name');
+          if (first) first.focus();
+        } catch {}
+      }, 100);
+    });
+    onUnmounted(() => {
+      document.removeEventListener('keydown', handleKeyDown);
+    });
     watch(() => props.userId, () => loadProfile());
 
+    expose({ save });
     return { form, saving, message, save };
   }
 };
