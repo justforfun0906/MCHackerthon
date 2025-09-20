@@ -705,7 +705,14 @@ const MiniJobApp = {
         const backFromRegion = () => { backToMenu(); };
         const backFromSkill = () => { backToMenu(); };
 
-        // Removed backToFilterSelection function since RSK now goes directly to role chooser
+        const backToFilterSelection = () => {
+        console.log('🔄 backToFilterSelection called - before: filtersSelected:', filtersSelected.value);
+        filtersSelected.value = false;
+        selectedJob.value = null;
+        selectionFlow.value = 'menu'; // Reset to menu
+        console.log('🔄 backToFilterSelection - after: filtersSelected:', filtersSelected.value, 'selectionFlow:', selectionFlow.value);
+        // Navigation will be updated by the filtersSelected watch
+        };
 
         const closeModal = () => { 
         showModal.value = false; 
@@ -844,31 +851,22 @@ const MiniJobApp = {
                 // For employers, stay in current employer choice (post, mine, or inbox)
             }
         } else if (role.value === 'seeker' && filtersSelected.value) {
-            // Return from job listing directly to role selection (simplified logic)
-            role.value = null;
-            currentTab.value = 'search';
-            filters.region = '';
-            filters.skill = '';
-            filtersSelected.value = false;
-            employerChoice.value = null;
+            // Return from job listing to filter selection page
+            backToFilterSelection();
         } else if (role.value === 'employer' && employerChoice.value) {
             // Return from employer action to employer choice selection
             employerChoice.value = null;
         } else {
-            // If already at role selection, go back to verification on second back
-            if (!role.value) {
-                mockVerified.value = false;
-            } else {
-                // Return to role selection
-                role.value = null;
-                currentTab.value = 'search';
-                selectedJob.value = null;
-                selectedApplicant.value = null;
-                filters.region = '';
-                filters.skill = '';
-                filtersSelected.value = false;
-                employerChoice.value = null;
-            }
+            // Return to role selection (not logout)
+            role.value = null;
+            currentTab.value = 'search';
+            selectedJob.value = null;
+            selectedApplicant.value = null;
+            filters.region = '';
+            filters.skill = '';
+            filtersSelected.value = false;
+            employerChoice.value = null;
+            // Keep mockVerified as true so we go back to role selection
         }
         };
 
@@ -960,9 +958,22 @@ const MiniJobApp = {
                         console.log('🔍 RSK: From region/skill selection, calling backToMenu');
                         backToMenu();
                     } else if (role.value === 'seeker' && currentTab.value === 'search') {
-                        // For seekers on search tab, always go back to role chooser (simplified)
-                        console.log('🔍 RSK: Seeker search tab, going back to role chooser');
-                        handleReturn();
+                        // For seekers on search tab, check if we're in job list or filter selection
+                        const isInJobList = filtersSelected.value && (filters.region.length > 0 && !!filters.skill);
+                        const isInFilterSelection = !filtersSelected.value || !filters.region.length || !filters.skill;
+                        
+                        console.log('🔍 RSK: Seeker search tab - isInJobList:', isInJobList, 'isInFilterSelection:', isInFilterSelection);
+                        console.log('🔍 RSK: filters.region:', filters.region, 'filters.skill:', filters.skill);
+                        
+                        if (isInJobList) {
+                            // From job listing page, go back to filter selection page
+                            console.log('🔍 RSK: From job listing, calling backToFilterSelection');
+                            backToFilterSelection();
+                        } else {
+                            // From filter selection menu, go to role chooser
+                            console.log('🔍 RSK: From filter selection menu, calling handleReturn');
+                            handleReturn();
+                        }
                     } else {
                         console.log('🔍 RSK: Default case, calling handleReturn');
                         handleReturn();
@@ -1328,7 +1339,7 @@ const MiniJobApp = {
         backToMenu,
         backFromRegion,
         backFromSkill,
-        // Removed backToFilterSelection - RSK now goes directly to role chooser
+        backToFilterSelection,
         onLoginSuccess,
         onMockVerified,
         logout,
