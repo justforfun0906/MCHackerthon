@@ -11,7 +11,7 @@ const MiniJobApp = {
         <!-- Status Bar -->
         <status-bar :current-time="currentTime"></status-bar>
         
-        <!-- Main Content -->
+    <!-- Main Content -->
         <div class="main-content">
             <!-- Mock Phone Verification -->
             <template v-if="!mockVerified">
@@ -40,6 +40,11 @@ const MiniJobApp = {
             </div>
             </template>
 
+            <!-- Profile Page -->
+            <template v-else-if="currentTab === 'profile'">
+            <user-profile :user-id="userId" @back="handleReturn" @saved="onProfileSaved" />
+            </template>
+
             <!-- Search Jobs -->
             <template v-else-if="currentTab === 'search' && role === 'seeker'">
             <!-- Step 1: Selection Flow -->
@@ -57,6 +62,8 @@ const MiniJobApp = {
                                 <span>Skill: {{ filters.skill || 'Not selected' }}</span>
                                 <span v-if="filters.skill">✓</span>
                             </div>
+                            <!-- Inserted: open profile from menu -->
+                            <div class="job-item" @click="openProfile">My Profile</div>
                         </div>
                     </div>
                 </template>
@@ -180,6 +187,7 @@ const MiniJobApp = {
         PhoneMock,
         PostForm,
         SelectionPage,
+        UserProfile,
         SoftKeys
     },
     setup() {
@@ -188,7 +196,7 @@ const MiniJobApp = {
         // State
         const mockVerified = ref(false);
         const role = ref(null); // 'seeker' | 'employer'
-        const currentTab = ref('search');
+        const currentTab = ref('search'); // 'search' | 'post' | 'mine' | 'profile'
         const selectedJob = ref(null);
         const showModal = ref(false);
         const modalTitle = ref('');
@@ -198,6 +206,7 @@ const MiniJobApp = {
         const showSelectionPage = ref(null); // 'region' | 'skill' | null
         const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
         const employerChoice = ref(null); // 'post' | 'mine' | null - for employer role selection
+        const userId = ref('');
 
         // Dictionaries (EN)
         const regions = ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'];
@@ -242,7 +251,7 @@ const MiniJobApp = {
         // Bottom nav (EN)
         const navTabs = computed(() => {
         if (role.value === 'seeker') return [ { key: 'search', label: 'Jobs' } ];
-        if (role.value === 'employer') return [ { key: 'mine', label: 'My Jobs' } ]; // Removed Post tab
+        if (role.value === 'employer') return [ { key: 'mine', label: 'My Jobs' } ];
         return [];
         });
 
@@ -258,6 +267,7 @@ const MiniJobApp = {
         const headerTitle = computed(() => {
         if (!mockVerified.value) return 'Phone Verification';
         if (!role.value) return 'Choose Role';
+        if (currentTab.value === 'profile') return 'My Profile';
         if (role.value === 'seeker') {
             if (selectedJob.value) return `Job: ${selectedJob.value.region}`;
             if (filtersSelected.value) return 'Job Listings';
@@ -276,9 +286,9 @@ const MiniJobApp = {
         return '';
         });
 
-        const rightSoftKey = computed(() => {
+    const rightSoftKey = computed(() => {
         if (selectedJob.value) return 'Back';
-        if (role.value) return 'Logout';
+    if (role.value) return 'Logout';
         return '';
         });
 
@@ -551,7 +561,13 @@ const MiniJobApp = {
         };
 
         const onLoginSuccess = () => {}; // real login removed
-        const onMockVerified = () => { mockVerified.value = true; };
+        const onMockVerified = (payload) => { 
+            mockVerified.value = true; 
+            try {
+                const phone = (payload && payload.phone) ? String(payload.phone) : '';
+                userId.value = phone ? `phone:${phone}` : (userId.value || 'demo-user');
+            } catch { userId.value = userId.value || 'demo-user'; }
+        };
 
         // Action handlers for new buttons
         const handleMyJobs = () => {
@@ -564,6 +580,8 @@ const MiniJobApp = {
                 employerChoice.value = 'post';
                 currentTab.value = 'post';
             }
+        } else if (role.value === 'seeker') {
+            currentTab.value = 'profile';
         }
         };
 
@@ -578,8 +596,22 @@ const MiniJobApp = {
         mockVerified.value = false; // back to verification screen
         };
 
+        const onProfileSaved = (payload) => {
+        // No global state yet; could integrate with header/user card later
+        };
+
 
         const handleReturn = () => {
+        if (currentTab.value === 'profile') {
+            if (role.value === 'seeker') {
+                currentTab.value = 'search';
+            } else if (role.value === 'employer') {
+                currentTab.value = employerChoice.value || 'mine';
+            } else {
+                currentTab.value = 'search';
+            }
+            return;
+        }
         if (selectedJob.value) {
             // Return from job detail view to job list
             selectedJob.value = null;
@@ -787,6 +819,13 @@ const MiniJobApp = {
         
         // Initialize soft key labels
         updateSoftKeyLabels();
+
+        // Derive a mock userId from phone mock if available
+        try {
+            const phoneMockEl = document.querySelector('phone-mock');
+            // No direct access; use a fixed demo uid if unknown
+            userId.value = 'demo-user';
+        } catch {}
         });
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
@@ -795,6 +834,9 @@ const MiniJobApp = {
             window.navigationService.deactivate();
         }
         });
+
+        // Helpers
+        const openProfile = () => { currentTab.value = 'profile'; };
 
         // Expose
         return {
@@ -814,6 +856,7 @@ const MiniJobApp = {
         selectionFlow,
         showSelectionPage,
         employerChoice,
+        userId,
         regions,
         roles,
         storeTypes,
@@ -852,8 +895,10 @@ const MiniJobApp = {
         closePanel,
         handleMyJobs,
         handleReturn,
+        openProfile,
         handleSoftKeyClick,
-        updateSoftKeyLabels
+        updateSoftKeyLabels,
+        onProfileSaved
         };
     }
 };

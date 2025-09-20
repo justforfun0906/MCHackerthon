@@ -35,6 +35,19 @@
     window.db = db;
     window.auth = auth;
     window.firebaseReady = true;
+
+    // Profile helpers
+    window.getUserProfile = async function(uid) {
+      if (!uid || !db) throw new Error('Missing uid or Firestore not ready');
+      const snap = await db.collection('users').doc(uid).get();
+      return snap.exists ? snap.data() : null;
+    }
+    window.saveUserProfile = async function(uid, data) {
+      if (!uid || !db) throw new Error('Missing uid or Firestore not ready');
+      const payload = { ...data, updatedAt: Date.now() };
+      await db.collection('users').doc(uid).set(payload, { merge: true });
+      return payload;
+    }
     console.info('[Firebase] Initialized (compat)');
   } catch (err) {
     console.error('[Firebase] Initialization error:', err);
