@@ -54,11 +54,11 @@ const MiniJobApp = {
                     <div class="filter-selection-page">
                         <div class="section-title">Select your preferences</div>
                         <div class="job-list">
-                            <div class="job-item" :class="{ selected: filters.region.length }" @click="startRegionSelection">
+                            <div class="job-item" @click="startRegionSelection">
                                 <span>Regions: {{ regionDisplayText }}</span>
                                 <span v-if="filters.region.length">✓</span>
                             </div>
-                            <div class="job-item" :class="{ selected: filters.skill }" @click="startSkillSelection">
+                            <div class="job-item" @click="startSkillSelection">
                                 <span>Skill: {{ filters.skill || 'Not selected' }}</span>
                                 <span v-if="filters.skill">✓</span>
                             </div>
@@ -158,8 +158,9 @@ const MiniJobApp = {
             </template>
             </template>
         </div>
-        
-       
+        <bottom-nav 
+            v-if="role"
+        ></bottom-nav>
         
         <!-- Modal -->
         <modal
@@ -292,19 +293,6 @@ const MiniJobApp = {
         return '';
         });
 
-        // Button visibility states
-        const showMyJobsButton = computed(() => {
-        // Show My Jobs button for employers
-        return role.value === 'employer';
-        });
-
-        const myJobsButtonText = computed(() => {
-        // Dynamic button text based on current view
-        if (role.value === 'employer') {
-            return currentTab.value === 'mine' ? 'Post Job' : 'My Jobs';
-        }
-        return 'My Jobs';
-        });
 
         // Firestore subscribe
         let unsubscribe = null;
@@ -675,6 +663,14 @@ const MiniJobApp = {
                             // No region selected, go to region selection
                             startRegionSelection();
                         }
+                    } else if (role.value === 'employer' && !employerChoice.value) {
+                        // Employer choice selection page - trigger the currently focused element
+                        if (window.navigationService) {
+                            const currentElement = window.navigationService.getCurrentFocusElement();
+                            if (currentElement && currentElement.click) {
+                                currentElement.click();
+                            }
+                        }
                     }
                     break;
                     
@@ -802,10 +798,7 @@ const MiniJobApp = {
         if (window.navigationService) {
             window.navigationService.setCallbacks({
             onEscape: () => {
-                // Left Soft Key - My Jobs action (if applicable)
-                if (showMyJobsButton.value) {
-                handleMyJobs();
-                }
+                // Left Soft Key - no action needed
             },
             onBack: () => {
                 // Right Soft Key - Return action  
@@ -870,8 +863,6 @@ const MiniJobApp = {
         headerTitle,
         leftSoftKey,
         rightSoftKey,
-        showMyJobsButton,
-        myJobsButtonText,
         viewJob,
         addJob,
         deleteJob,
@@ -893,7 +884,6 @@ const MiniJobApp = {
         onMockVerified,
         logout,
         closePanel,
-        handleMyJobs,
         handleReturn,
         openProfile,
         handleSoftKeyClick,

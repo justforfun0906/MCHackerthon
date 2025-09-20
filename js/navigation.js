@@ -33,8 +33,12 @@ class NavigationService {
                     this.handleHorizontalMove(1);
                     break;
                 case 'Enter':
-                    event.preventDefault();
-                    this.handleEnter();
+                    // Don't intercept Enter in selection pages - let SelectionPage handle it
+                    const isInSelectionPage = document.querySelector('.selection-page') !== null;
+                    if (!isInSelectionPage) {
+                        event.preventDefault();
+                        this.handleEnter();
+                    }
                     break;
                 case 'Escape':
                     event.preventDefault();
@@ -81,10 +85,10 @@ class NavigationService {
             '.job-item',
             '.modal-btn',
             '.panel-btn',
-            'input:not(.no-focus)',
-            'select:not(.no-focus)',
-            'button:not([disabled]):not(.no-focus)',
-            '[tabindex]:not([tabindex="-1"]):not(.no-focus)'
+            'input:not(.no-focus):not(.no-navigation):not(.soft-key)',
+            'select:not(.no-focus):not(.no-navigation):not(.soft-key)',
+            'button:not([disabled]):not(.no-focus):not(.no-navigation):not(.soft-key)',
+            '[tabindex]:not([tabindex="-1"]):not(.no-focus):not(.no-navigation):not(.soft-key)'
         ].join(',');
         
         let elements = Array.from(document.querySelectorAll(selectors));
@@ -93,9 +97,11 @@ class NavigationService {
         const softKeysElement = document.querySelector('soft-keys');
         if (softKeysElement && softKeysElement.shadowRoot) {
             const shadowElements = Array.from(softKeysElement.shadowRoot.querySelectorAll(selectors));
-            // Filter out elements with no-focus class or tabindex="-1"
+            // Filter out elements with no-focus, no-navigation, soft-key class or tabindex="-1"
             const filteredShadowElements = shadowElements.filter(el => 
                 !el.classList.contains('no-focus') && 
+                !el.classList.contains('no-navigation') &&
+                !el.classList.contains('soft-key') &&
                 el.getAttribute('tabindex') !== '-1'
             );
             elements = elements.concat(filteredShadowElements);
