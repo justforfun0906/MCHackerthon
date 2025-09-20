@@ -1,7 +1,7 @@
 /* App Header - 40px height for QVGA with high contrast */
 .app-header {
     height: 40px;
-    background: #000; /* Pure black background */
+    background: #333; /* Grey background */
     border-bottom: 2px solid #fff; /* High contrast border */
     position: relative;
 }
@@ -27,12 +27,10 @@
     text-shadow: 2px 2px 4px #000; /* Text shadow for better readability */
 }
 
-/* D-pad Focus Styles - High Contrast */
+/* D-pad Focus Styles - Remove outline but allow border changes */
 .dpad-focus {
-    outline: 3px solid #00ff00 !important; /* Bright green for visibility */
-    outline-offset: 2px;
-    background: rgba(0, 255, 0, 0.2) !important; /* Green highlight */
-    border: 2px solid #fff !important; /* White border for extra contrast */
+    /* Remove outline but allow border changes */
+    outline: none !important;
 }
 
 /* Selection Page Styles */
@@ -51,8 +49,8 @@
 }
 
 .selection-item {
-    background: #333; /* Dark grey background */
-    border: 1px solid #fff; /* High contrast border */
+    background: #333; /* Original dark grey background */
+    border: none; /* No border by default */
     border-radius: 4px;
     padding: 8px; /* Better padding for QVGA */
     margin-bottom: 4px;
@@ -68,23 +66,15 @@
 
 .selection-item:hover {
     background: #555; /* Lighter grey on hover */
-    border-color: #00ff00; /* Green border on hover */
 }
 
 .selection-item.focused {
-    background: #555; /* Focused state */
-    border-color: #00ff00; /* Green border for focus */
-    outline: 2px solid #00ff00; /* Additional focus indicator */
-    outline-offset: 1px;
+    border: 2px solid #fff; /* White border for focused items */
 }
 
 .selection-item.selected {
-    background: #004400; /* Dark green for selected */
-    border-color: #00ff00; /* Bright green border */
-}
-
-.selection-item.selected.focused {
-    background: #006600; /* Lighter green when both selected and focused */
+    background: #666; /* Grey background for selected items */
+    color: #fff; /* White text for selected items */
 }
 
 .option-text {
@@ -194,7 +184,7 @@
 /* 頂部狀態欄 - High Contrast */
 .status-bar {
     height: 24px; /* Increased for QVGA */
-    background: #000; /* Pure black */
+    background: #333; /* Grey background */
     border-bottom: 1px solid #fff; /* High contrast border */
     display: flex;
     justify-content: space-between;
@@ -271,8 +261,8 @@
 }
 
 .job-item {
-    background: #333; /* Dark grey background */
-    border: 1px solid #fff; /* High contrast border */
+    background: #333; /* Original dark grey background */
+    border: none; /* No border by default */
     border-radius: 4px;
     padding: 8px; /* Better padding for QVGA */
     margin-bottom: 4px;
@@ -285,7 +275,16 @@
 
 .job-item:hover {
     background: #555; /* Lighter grey on hover */
-    border-color: #00ff00; /* Green border on hover */
+}
+
+/* Focused job items get white border (currently being navigated to) */
+.job-item.dpad-focus {
+    border: 2px solid #fff; /* White border for focused items */
+}
+
+/* Selected job items get white border */
+.job-item.selected {
+    border: 2px solid #fff; /* White border for selected items */
 }
 
 .job-item.completed {
@@ -313,7 +312,7 @@
 /* 底部按鈕區 - High Contrast with action buttons */
 .bottom-nav {
     height: 40px; /* Increased for QVGA */
-    background: #000; /* Pure black */
+    background: #333; /* Grey background */
     border-top: 2px solid #fff; /* High contrast border */
     display: flex;
     justify-content: space-between; /* Changed to space-between for action buttons */
@@ -329,30 +328,6 @@
     min-width: 0; /* Allow flexbox to shrink */
 }
 
-.nav-btn {
-    background: #333; /* Dark grey background */
-    border: 2px solid #fff; /* High contrast border */
-    color: #fff; /* Pure white text */
-    font-size: 14px; /* Reduced for QVGA space constraints */
-    cursor: pointer;
-    padding: 6px 8px; /* Reduced padding for smaller screens */
-    border-radius: 4px;
-    transition: all 0.2s;
-    min-height: 28px; /* Reduced height */
-    font-weight: bold;
-    flex: 1; /* Allow buttons to share space */
-    max-width: 80px; /* Limit button width */
-}
-
-.nav-btn.active {
-    background: #fff; /* White background when active */
-    color: #000; /* Black text when active */
-}
-
-.nav-btn:hover {
-    background: #555; /* Lighter grey on hover */
-    border-color: #00ff00; /* Green border on hover */
-}
 
 /* Action buttons (Confirm/Return) */
 .action-btn {

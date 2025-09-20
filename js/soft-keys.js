@@ -124,8 +124,8 @@ class SoftKeys extends HTMLElement {
                     ${menuIcon}
                     <span class="key-label">確認</span>
                 </div>
-                <div class="soft-key center" tabindex="0" role="button" aria-label="輸入" data-key="enter">
-                    輸入
+                <div class="soft-key center" tabindex="0" role="button" aria-label="選擇" data-key="enter">
+                    選擇
                 </div>
                 <div class="soft-key right" tabindex="0" role="button" aria-label="返回" data-key="rsk">
                     ${backIcon}
@@ -159,19 +159,9 @@ class SoftKeys extends HTMLElement {
             );
         });
 
-        // 中心鍵 - 輸入
+        // 中心鍵 - 選擇（不觸發任何動作）
         centerKey.addEventListener("click", () => {
-            this.dispatchEvent(
-                new CustomEvent("softkeyclick", {
-                    bubbles: true,
-                    composed: true,
-                    detail: { 
-                        key: "enter",
-                        source: "center-key",
-                        action: "input"
-                    }
-                })
-            );
+            // 中心鍵不觸發任何動作，只是顯示標籤
         });
 
         // 右軟鍵 (RSK) - 返回
@@ -196,12 +186,15 @@ class SoftKeys extends HTMLElement {
 
         // D-pad 導航支援
         document.addEventListener("keydown", (e) => {
+            // Check if we're in a selection page
+            const isInSelectionPage = document.querySelector('.selection-page') !== null;
+            
             if (e.key === "SoftLeft" || e.key === "Escape") {
                 e.preventDefault();
                 leftKey.click();
             } else if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                centerKey.click();
+                // Don't intercept Enter - let navigation system handle it
+                // Center key is now just a visual indicator
             } else if (e.key === "SoftRight" || e.key === "F12") {
                 e.preventDefault();
                 rightKey.click();

@@ -4,14 +4,14 @@ const PostForm = {
         <form class="post-form" @submit.prevent="onSubmit">
             <div class="field-row">
                 <label>Region</label>
-                <select v-model="form.region" required class="region-select">
+                <select v-model="form.region" required class="region-select" @keydown="handleSelectKeydown" ref="regionSelect">
                     <option value="" disabled>Select</option>
                     <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
                 </select>
             </div>
             <div class="field-row">
                 <label>Store Type</label>
-                <select v-model="form.storeType" required>
+                <select v-model="form.storeType" required @keydown="handleSelectKeydown" ref="storeTypeSelect">
                     <option value="" disabled>Select</option>
                     <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
                 </select>
@@ -30,7 +30,7 @@ const PostForm = {
             </div>
             <div class="field-row">
                 <label>Time Slot</label>
-                <select v-model="form.time" required>
+                <select v-model="form.time" required @keydown="handleSelectKeydown" ref="timeSelect">
                     <option value="" disabled>Select</option>
                     <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
                 </select>
@@ -69,6 +69,16 @@ const PostForm = {
         };
     },
     methods: {
+        handleSelectKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                // Open the dropdown by focusing and triggering click
+                const select = event.target;
+                select.focus();
+                // Trigger the dropdown to open
+                select.click();
+            }
+        },
         onSubmit() {
             if (!this.form.region || !this.form.storeType || !this.form.time || this.form.roles.length === 0) return;
             const payload = {

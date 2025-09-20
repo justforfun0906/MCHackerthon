@@ -59,7 +59,13 @@ class NavigationService {
     activate() {
         this.isActive = true;
         this.refreshFocusableElements();
+        // Always focus on the first element when activating
+        this.focusFirstElement();
+    }
+    
+    focusFirstElement() {
         if (this.focusableElements.length > 0) {
+            this.currentFocusIndex = 0;
             this.setFocus(0);
         }
     }
@@ -73,7 +79,6 @@ class NavigationService {
         // Get all focusable elements in the main content area
         const selectors = [
             '.job-item',
-            '.nav-btn',
             '.modal-btn',
             '.panel-btn',
             'input',
@@ -165,11 +170,8 @@ class NavigationService {
         // Call this when the DOM changes
         setTimeout(() => {
             this.refreshFocusableElements();
-            // Ensure current focus is still valid
-            if (this.currentFocusIndex >= this.focusableElements.length) {
-                this.currentFocusIndex = Math.max(0, this.focusableElements.length - 1);
-                this.setFocus(this.currentFocusIndex);
-            }
+            // Always focus on the first element when updating
+            this.focusFirstElement();
         }, 100);
     }
     

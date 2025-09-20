@@ -48,7 +48,7 @@ html, body {
 /* 主要內容區域 */
 .main-content {
     flex: 1;
-    padding: 8px; /* 8pt minimum margin for QVGA */
+    padding: 8px 8px 0 8px; /* 移除底部padding，避免與軟鍵盤間隔 */
     display: flex;
     flex-direction: column;
     overflow: hidden;

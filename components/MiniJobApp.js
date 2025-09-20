@@ -38,16 +38,13 @@ const MiniJobApp = {
                     <div class="filter-selection-page">
                         <div class="section-title">Select your preferences</div>
                         <div class="job-list">
-                            <div class="job-item" @click="startRegionSelection">
+                            <div class="job-item" :class="{ selected: filters.region.length }" @click="startRegionSelection">
                                 <span>Regions: {{ regionDisplayText }}</span>
                                 <span v-if="filters.region.length">✓</span>
                             </div>
-                            <div class="job-item" @click="startSkillSelection">
+                            <div class="job-item" :class="{ selected: filters.skill }" @click="startSkillSelection">
                                 <span>Skill: {{ filters.skill || 'Not selected' }}</span>
                                 <span v-if="filters.skill">✓</span>
-                            </div>
-                            <div class="job-item" v-if="filters.region.length && filters.skill" @click="proceedToJobList">
-                                <span>Search Jobs</span>
                             </div>
                         </div>
                     </div>
@@ -147,11 +144,8 @@ const MiniJobApp = {
         <!-- Bottom Navigation -->
         <bottom-nav 
             v-if="role"
-            :current-tab="currentTab"
-            :tabs="navTabs"
             :show-my-jobs="showMyJobsButton"
             :my-jobs-button-text="myJobsButtonText"
-            @switch-tab="switchTab"
             @my-jobs-action="handleMyJobs"
         ></bottom-nav>
         
@@ -595,17 +589,16 @@ const MiniJobApp = {
                             }
                         }
                     } else if (role.value === 'seeker' && !filtersSelected.value) {
-                        // In filter selection, LSK could confirm selection
+                        // In filter selection, LSK has smart behavior
                         if (filters.region.length && filters.skill) {
+                            // Both selected, proceed to job list
                             proceedToJobList();
-                        } else {
-                            // If not all filters selected, trigger the currently focused element
-                            if (window.navigationService) {
-                                const currentElement = window.navigationService.getCurrentFocusElement();
-                                if (currentElement && currentElement.click) {
-                                    currentElement.click();
-                                }
-                            }
+                        } else if (filters.region.length && !filters.skill) {
+                            // Region selected but not skill, go to skill selection
+                            startSkillSelection();
+                        } else if (!filters.region.length) {
+                            // No region selected, go to region selection
+                            startRegionSelection();
                         }
                     }
                     break;
@@ -618,39 +611,18 @@ const MiniJobApp = {
                     }
                     break;
                     
-                case 'enter': // Center key - Input/Enter
-                    // Trigger the currently focused element or input field
-                    if (window.navigationService) {
-                        const currentElement = window.navigationService.getCurrentFocusElement();
-                        if (currentElement) {
-                            if (currentElement.click) {
-                                currentElement.click();
-                            } else if (currentElement.focus) {
-                                currentElement.focus();
-                            }
-                        }
-                    }
-                    
-                    // If no focused element, try to focus on the first input/button
-                    const firstInteractive = document.querySelector('input, button, .job-item, .panel-btn');
-                    if (firstInteractive && firstInteractive.focus) {
-                        firstInteractive.focus();
-                    }
+                case 'enter': // Center key - 不觸發任何動作
+                    // 中心鍵現在只是視覺指示器，不觸發任何動作
                     break;
             }
         };
 
-        // Watch for mockVerified changes to update navigation when entering role selection
+        // Watch for mockVerified changes to update navigation
         Vue.watch(mockVerified, (newVerified) => {
             if (newVerified && window.navigationService) {
-                // When entering role selection page, activate navigation
-                window.navigationService.activate();
+                // Update navigation when entering role selection
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
-                    // Ensure first element is focused
-                    if (window.navigationService.focusableElements.length > 0) {
-                        window.navigationService.setFocus(0);
-                    }
                 }, 300);
             }
         });
@@ -661,9 +633,67 @@ const MiniJobApp = {
             if (window.navigationService) {
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
                 }, 100);
             }
         });
+
+        // Watch for currentTab changes to update navigation
+        Vue.watch(currentTab, (newTab) => {
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 100);
+            }
+        });
+
+        // Watch for selectedJob changes to update navigation
+        Vue.watch(selectedJob, (newJob) => {
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 100);
+            }
+        });
+
+        // Watch for selectionFlow changes to update navigation
+        Vue.watch(selectionFlow, (newFlow) => {
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 100);
+            }
+        });
+
+        // Watch for filter changes to update soft key labels
+        Vue.watch([() => filters.region, () => filters.skill], () => {
+            updateSoftKeyLabels();
+        });
+
+        // Function to update soft key labels
+        const updateSoftKeyLabels = () => {
+            const softKeysElement = document.querySelector('soft-keys');
+            if (softKeysElement && role.value === 'seeker' && !filtersSelected.value) {
+                if (filters.region.length && filters.skill) {
+                    // Both selected, show "送出" (Submit)
+                    softKeysElement.updateLabels({
+                        left: '送出',
+                        center: '輸入',
+                        right: '返回'
+                    });
+                } else {
+                    // Not both selected, show "確認" (Confirm)
+                    softKeysElement.updateLabels({
+                        left: '確認',
+                        center: '輸入',
+                        right: '返回'
+                    });
+                }
+            }
+        };
 
         // Lifecycle
         onMounted(() => {
@@ -686,9 +716,12 @@ const MiniJobApp = {
             }
             });
             
-            // Don't activate immediately, wait for the first page with focusable elements
-            // Navigation will be activated when mockVerified becomes true
+            // Activate navigation immediately for all pages
+            window.navigationService.activate();
         }
+        
+        // Initialize soft key labels
+        updateSoftKeyLabels();
         });
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
@@ -752,7 +785,8 @@ const MiniJobApp = {
         closePanel,
         handleMyJobs,
         handleReturn,
-        handleSoftKeyClick
+        handleSoftKeyClick,
+        updateSoftKeyLabels
         };
     }
 };
