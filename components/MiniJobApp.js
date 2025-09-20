@@ -857,16 +857,20 @@ const MiniJobApp = {
             // Return from employer action to employer choice selection
             employerChoice.value = null;
         } else {
-            // Return to role selection (not logout)
-            role.value = null;
-            currentTab.value = 'search';
-            selectedJob.value = null;
-            selectedApplicant.value = null;
-            filters.region = '';
-            filters.skill = '';
-            filtersSelected.value = false;
-            employerChoice.value = null;
-            // Keep mockVerified as true so we go back to role selection
+            // If already at role selection, go back to verification on second back
+            if (!role.value) {
+                mockVerified.value = false;
+            } else {
+                // Return to role selection
+                role.value = null;
+                currentTab.value = 'search';
+                selectedJob.value = null;
+                selectedApplicant.value = null;
+                filters.region = '';
+                filters.skill = '';
+                filtersSelected.value = false;
+                employerChoice.value = null;
+            }
         }
         };
 
