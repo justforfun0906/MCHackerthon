@@ -208,6 +208,20 @@ const MiniJobApp = {
 
         // Filters - regions is now an array for multi-select
         const filters = reactive({ region: [], skill: '' });
+        const PREFS_KEY = 'seekerPrefs';
+        const loadPrefs = () => {
+            try {
+                const raw = localStorage.getItem(PREFS_KEY);
+                if (raw) {
+                    const obj = JSON.parse(raw);
+                    if (obj && obj.region && Array.isArray(obj.region)) filters.region = obj.region;
+                    if (obj && typeof obj.skill === 'string') filters.skill = obj.skill;
+                }
+            } catch {}
+        };
+        const savePrefs = () => {
+            try { localStorage.setItem(PREFS_KEY, JSON.stringify({ region: filters.region, skill: filters.skill, ts: Date.now() })); } catch {}
+        };
         const normalizeRoles = (val) => {
         if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
         if (typeof val === 'string') return [val];
@@ -518,6 +532,7 @@ const MiniJobApp = {
                 // Keep current behavior for skill: return to preferences menu
                 currentTab.value = 'search';
             }
+            savePrefs();
         };
 
         const backToMenu = () => {
@@ -808,6 +823,7 @@ const MiniJobApp = {
 
         // Watch for filter changes to update soft key labels
         Vue.watch([() => filters.region, () => filters.skill], () => {
+            savePrefs();
             updateSoftKeyLabels();
         });
 
@@ -904,7 +920,8 @@ const MiniJobApp = {
         // Mirror RSK behavior
         triggerRSK();
     };
-        onMounted(() => {
+    onMounted(() => {
+    loadPrefs();
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
         startSubscribe();

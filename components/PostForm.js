@@ -65,7 +65,9 @@ const PostForm = {
                 time: '',
                 count: 1,
                 note: ''
-            }
+            },
+            cacheKey: 'postDraft',
+            cacheTimer: null
         };
     },
     methods: {
@@ -91,6 +93,8 @@ const PostForm = {
                 note: this.form.note
             };
             this.$emit('submit', payload);
+            // Clear cache on successful submit
+            try { localStorage.removeItem(this.cacheKey); } catch {}
             // reset form
             this.form.region = '';
             this.form.storeType = '';
@@ -100,5 +104,24 @@ const PostForm = {
             this.form.count = 1;
             this.form.note = '';
         }
+    },
+    mounted() {
+        // Load cached draft if any
+        try {
+            const raw = localStorage.getItem(this.cacheKey);
+            if (raw) {
+                const obj = JSON.parse(raw);
+                if (obj && obj.form) {
+                    this.form = { ...this.form, ...obj.form };
+                }
+            }
+        } catch {}
+        // Watch form changes and cache with debounce
+        this.$watch(() => this.form, () => {
+            try { if (this.cacheTimer) clearTimeout(this.cacheTimer); } catch {}
+            this.cacheTimer = setTimeout(() => {
+                try { localStorage.setItem(this.cacheKey, JSON.stringify({ form: this.form, ts: Date.now() })); } catch {}
+            }, 300);
+        }, { deep: true });
     }
 };
