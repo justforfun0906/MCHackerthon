@@ -651,6 +651,7 @@ const MiniJobApp = {
 
         const proceedToJobList = () => {
         if (filters.region.length && filters.skill) {
+            console.log('🚀 proceedToJobList called - setting filtersSelected to true');
             filtersSelected.value = true;
             // Focus on the first job after proceeding to job list
             if (window.navigationService) {
@@ -705,9 +706,11 @@ const MiniJobApp = {
         const backFromSkill = () => { backToMenu(); };
 
         const backToFilterSelection = () => {
+        console.log('🔄 backToFilterSelection called - before: filtersSelected:', filtersSelected.value);
         filtersSelected.value = false;
         selectedJob.value = null;
         selectionFlow.value = 'menu'; // Reset to menu
+        console.log('🔄 backToFilterSelection - after: filtersSelected:', filtersSelected.value, 'selectionFlow:', selectionFlow.value);
         // Navigation will be updated by the filtersSelected watch
         };
 
@@ -954,14 +957,23 @@ const MiniJobApp = {
                         // From dedicated selection pages, go back to preferences menu
                         console.log('🔍 RSK: From region/skill selection, calling backToMenu');
                         backToMenu();
-                    } else if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
-                        // From preferences menu, go to role chooser
-                        console.log('🔍 RSK: From preferences menu, calling handleReturn');
-                        handleReturn();
-                    } else if (role.value === 'seeker' && currentTab.value === 'search' && filtersSelected.value) {
-                        // From job listing page, go back to filter selection page (like employer logic)
-                        console.log('🔍 RSK: From job listing, calling backToFilterSelection');
-                        backToFilterSelection();
+                    } else if (role.value === 'seeker' && currentTab.value === 'search') {
+                        // For seekers on search tab, check if we're in job list or filter selection
+                        const isInJobList = filtersSelected.value && (filters.region.length > 0 && filters.skill);
+                        const isInFilterSelection = !filtersSelected.value || !filters.region.length || !filters.skill;
+                        
+                        console.log('🔍 RSK: Seeker search tab - isInJobList:', isInJobList, 'isInFilterSelection:', isInFilterSelection);
+                        console.log('🔍 RSK: filters.region:', filters.region, 'filters.skill:', filters.skill);
+                        
+                        if (isInJobList) {
+                            // From job listing page, go back to filter selection page
+                            console.log('🔍 RSK: From job listing, calling backToFilterSelection');
+                            backToFilterSelection();
+                        } else {
+                            // From filter selection menu, go to role chooser
+                            console.log('🔍 RSK: From filter selection menu, calling handleReturn');
+                            handleReturn();
+                        }
                     } else {
                         console.log('🔍 RSK: Default case, calling handleReturn');
                         handleReturn();
