@@ -276,17 +276,17 @@ select option {
 /* 用 grid 固定兩欄：左 label、右 control */
     .field-row {
         display: grid;
-        grid-template-columns: 72px 1fr; /* 左 72px 標籤欄，右邊彈性 */
+        grid-template-columns: 40px 1fr; /* 左 40px 標籤欄，右邊彈性 */
         align-items: center;
-        column-gap: 8px;
-        margin: 6px 0;
+        column-gap: 2px;
+        margin: 2px 0;
     }
     
     /* 調整 label 字級，和控制項一致 */
     .field-row label {
-        font-size: 12px;
-        line-height: 1.2;
-        margin: 0;               /* 移除多餘右邊距 */
+        font-size: 6px;
+        line-height: 1.1;
+        margin: 0;
         opacity: .9;
     }
     
