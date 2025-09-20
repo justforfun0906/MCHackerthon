@@ -206,7 +206,7 @@
     margin-right: 4px;
 }
 select, input[type="number"] {
-    font-size: 6px; 
+    font-size: 12px; 
     padding: 2px 4px;
     min-width: 80px;
     border-radius: 3px;
