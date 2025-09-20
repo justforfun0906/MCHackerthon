@@ -19,14 +19,8 @@ const PhoneMock = {
             class="cloudfone-input"
           />
         </div>
-        <div class="soft-keys">
-          <button class="soft-key left" @click="handleEnter" :disabled="!phone.trim()">
-            Enter
-          </button>
-          <button class="soft-key right" @click="handlePhoneClear">
-            {{ phone.trim() ? 'Clear' : 'Quit' }}
-          </button>
-        </div>
+        <!-- Soft Keys -->
+        <soft-keys @softkeyclick="handleSoftKeyClick"></soft-keys>
       </div>
 
       <!-- Verification Code Stage -->
@@ -47,19 +41,16 @@ const PhoneMock = {
             class="cloudfone-input code-input"
           />
         </div>
-        <div class="soft-keys">
-          <button class="soft-key left" @click="handleVerify" :disabled="code.length < 4">
-            Enter
-          </button>
-          <button class="soft-key right" @click="handleCodeClear">
-            {{ code.trim() ? 'Clear' : 'Back' }}
-          </button>
-        </div>
+        <!-- Soft Keys -->
+        <soft-keys @softkeyclick="handleSoftKeyClick"></soft-keys>
         <div v-if="error" class="error-message">{{ error }}</div>
         <div v-if="verified" class="success-message">Verification successful!</div>
       </div>
     </div>
   `,
+  components: {
+    SoftKeys
+  },
   emits: ['verified'],
   data() {
     return {
@@ -114,38 +105,52 @@ const PhoneMock = {
     },
 
     // Soft key actions
-    handleEnter() {
-      if (this.stage === 'input' && this.phone.trim()) {
-        this.sendCode();
-      } else if (this.stage === 'code' && this.code.length >= 4) {
-        this.handleVerify();
-      }
-    },
-
-    handlePhoneClear() {
-      if (this.phone.trim()) {
-        // Clear the input
-        this.phone = '';
-        this.$nextTick(() => {
-          this.$refs.phoneInput.focus();
-        });
-      } else {
-        // Quit - emit an event or handle app exit
-        this.handleQuit();
-      }
-    },
-
-    handleCodeClear() {
-      if (this.code.trim()) {
-        // Clear the input
-        this.code = '';
-        this.error = '';
-        this.$nextTick(() => {
-          this.$refs.codeInput.focus();
-        });
-      } else {
-        // Back to phone input
-        this.reset();
+    handleSoftKeyClick(event) {
+      const { key, action } = event.detail;
+      
+      switch (key) {
+        case 'lsk': // Left Soft Key - Confirm/Enter
+          if (this.stage === 'input' && this.phone.trim()) {
+            this.sendCode();
+          } else if (this.stage === 'code' && this.code.length >= 4) {
+            this.handleVerify();
+          }
+          break;
+          
+        case 'rsk': // Right Soft Key - Clear/Back/Quit
+          if (this.stage === 'input') {
+            if (this.phone.trim()) {
+              // Clear the input
+              this.phone = '';
+              this.$nextTick(() => {
+                this.$refs.phoneInput.focus();
+              });
+            } else {
+              // Quit - emit an event or handle app exit
+              this.handleQuit();
+            }
+          } else if (this.stage === 'code') {
+            if (this.code.trim()) {
+              // Clear the input
+              this.code = '';
+              this.error = '';
+              this.$nextTick(() => {
+                this.$refs.codeInput.focus();
+              });
+            } else {
+              // Back to phone input
+              this.reset();
+            }
+          }
+          break;
+          
+        case 'enter': // Center key - Input focus
+          if (this.stage === 'input') {
+            this.$refs.phoneInput.focus();
+          } else if (this.stage === 'code') {
+            this.$refs.codeInput.focus();
+          }
+          break;
       }
     },
 
@@ -210,16 +215,12 @@ const PhoneMock = {
     if (window.navigationService) {
       window.navigationService.setCallbacks({
         onEscape: () => {
-          // Left soft key - Enter action
-          this.handleEnter();
+          // Left soft key - Confirm action
+          this.handleSoftKeyClick({ detail: { key: 'lsk' } });
         },
         onBack: () => {
-          // Right soft key - Clear/Quit/Back action
-          if (this.stage === 'input') {
-            this.handlePhoneClear();
-          } else {
-            this.handleCodeClear();
-          }
+          // Right soft key - Clear/Back/Quit action
+          this.handleSoftKeyClick({ detail: { key: 'rsk' } });
         }
       });
     }
