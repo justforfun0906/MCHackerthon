@@ -94,5 +94,3 @@ Simply open `index.html` in any modern web browser. No build process or server r
 
 This project demonstrates a clean, modular Vue.js application structure that's both maintainable and perfectly suited for GitHub Pages deployment.
 
-加強發布工作的頁面: 新增地址欄位，新增手機號碼欄位，可以管理發布過的工作 如刪除或是修改需要的人數等 
-修改按下應徵按鈕後的邏輯: 取得雇主的電話，雇主的頁面的職缺數量產生相對應的改變(減少一個職缺)
