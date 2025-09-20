@@ -306,7 +306,10 @@ const MiniJobApp = {
                 if (s.userId && s.userId !== (userId.value || 'anon')) return;
                 if (!s.userKey && s.userId && s.userId !== (userId.value || 'anon')) return;
                 if (s.userKey && s.userKey !== (userKey.value || 'anon')) return;
-                if (typeof s.mockVerified === 'boolean') mockVerified.value = s.mockVerified;
+                // Don't downgrade verification: only apply if not already verified
+                if (typeof s.mockVerified === 'boolean' && mockVerified.value !== true) {
+                    mockVerified.value = s.mockVerified;
+                }
                 if (s.role === 'seeker' || s.role === 'employer') role.value = s.role;
                 if (typeof s.currentTab === 'string') currentTab.value = s.currentTab;
                 if (s.role === 'employer' && (s.employerChoice === 'post' || s.employerChoice === 'mine')) {
@@ -785,7 +788,9 @@ const MiniJobApp = {
                     try { localStorage.removeItem(`${PREFS_KEY_BASE}:${userId.value}`); } catch {}
                 }
             } catch {}
-            // Reload active session and prefs now that userId is known
+            // Persist verification immediately
+            saveSession();
+            // Reload active session and prefs now that userId is known (guarded from downgrade)
             loadPrefs();
             loadSession();
         };
