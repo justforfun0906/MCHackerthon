@@ -18,11 +18,15 @@ class NavigationService {
             switch(event.key) {
                 case 'ArrowUp':
                     event.preventDefault();
-                    this.moveFocus(-1);
+                    if (!this.handleScrollIfNeeded(-1)) {
+                        this.moveFocus(-1);
+                    }
                     break;
                 case 'ArrowDown':
                     event.preventDefault();
-                    this.moveFocus(1);
+                    if (!this.handleScrollIfNeeded(1)) {
+                        this.moveFocus(1);
+                    }
                     break;
                 case 'ArrowLeft':
                     event.preventDefault();
@@ -44,6 +48,14 @@ class NavigationService {
                     event.preventDefault();
                     this.handleBack();
                     break;
+                case 'SoftLeft':
+                    event.preventDefault();
+                    this.handleEscape();
+                    break;
+                case 'SoftRight':
+                    event.preventDefault();
+                    this.handleBack();
+                    break;
             }
         });
         
@@ -54,6 +66,32 @@ class NavigationService {
                 this.onBackCallback();
             }
         });
+    }
+
+    // Attempt to scroll the currently focused element if it's a scrollable container.
+    // direction: -1 for up, 1 for down. Returns true if a scroll was performed.
+    handleScrollIfNeeded(direction) {
+        const el = this.getCurrentFocusElement();
+        if (!el) return false;
+        
+        // Determine if element is vertically scrollable
+        const style = window.getComputedStyle(el);
+        const canScrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll')
+            && el.scrollHeight > el.clientHeight;
+        if (!canScrollY) return false;
+        
+        const step = 32; // QVGA-friendly scroll step
+        const maxScroll = el.scrollHeight - el.clientHeight;
+        const prev = el.scrollTop;
+        let next = prev + (direction > 0 ? step : -step);
+        if (next < 0) next = 0;
+        if (next > maxScroll) next = maxScroll;
+        
+        // If there's no change, allow focus to move out
+        if (next === prev) return false;
+        
+        el.scrollTop = next;
+        return true;
     }
     
     activate() {
