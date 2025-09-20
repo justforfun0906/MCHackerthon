@@ -167,6 +167,7 @@
     max-width: 180px; /* Set maximum width to prevent overflow */
     box-sizing: border-box; /* Include padding in width calculation */
     resize: vertical; /* Allow vertical resize only */
+    overflow-x: hidden; /* Disable horizontal scrolling */
 }
 
 .address-input {
@@ -176,10 +177,11 @@
     border: 2px solid #fff; /* High contrast border */
     background: #000; /* Black background */
     color: #fff; /* White text */
-    width: 120px; /* Reduced to prevent overlap */
-    max-width: 140px; /* Set maximum width */
+    width: 100px; /* Further reduced to prevent overlap */
+    max-width: 120px; /* Reduced maximum width */
     font-weight: bold;
     box-sizing: border-box; /* Include padding in width calculation */
+    overflow-x: hidden; /* Disable horizontal scrolling */
 }
 /* 頂部狀態欄 - High Contrast */
 .status-bar {
@@ -349,14 +351,6 @@
     border-color: #0066cc;
 }
 
-.action-btn.my-jobs {
-    background: #004466; /* Dark blue for my jobs */
-    border-color: #0066cc; /* Blue border */
-}
-
-.action-btn.my-jobs:hover {
-    background: #005588;
-}
 
 .action-btn.return {
     background: #660000; /* Dark red for return */
@@ -411,7 +405,7 @@
     border-color: #00ff00; /* Green border on hover */
 }
 
-/* 表單樣式 - High Contrast, with scroll */
+/* 表單樣式 - High Contrast, no horizontal scroll */
 .filter-bar, .post-form {
     background: #111; /* Very dark background */
     border: 2px solid #fff; /* High contrast border */
@@ -423,6 +417,7 @@
     max-height: 180px; /* Set height for scrolling */
     box-sizing: border-box;
     overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: hidden; /* Disable horizontal scrolling */
     color: #fff; /* Pure white text */
 }
 
@@ -432,6 +427,8 @@
     justify-content: space-between;
     margin: 4px 0; /* Better spacing */
     gap: 8px;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    overflow-x: hidden; /* Hide any overflow */
 }
 
 .field-row label {
@@ -443,8 +440,8 @@
 select, input[type="number"] {
     font-size: 16px; /* QVGA Body size */
     padding: 6px 12px; /* Better padding */
-    min-width: 100px; /* Reduced to prevent overlap */
-    max-width: 120px; /* Set maximum width */
+    min-width: 80px; /* Further reduced to prevent overlap */
+    max-width: 100px; /* Reduced maximum width */
     border-radius: 4px;
     border: 2px solid #fff; /* High contrast border */
     background: #000; /* Black background */
@@ -452,6 +449,7 @@ select, input[type="number"] {
     min-height: 32px; /* Adequate touch target */
     font-weight: bold;
     box-sizing: border-box; /* Include padding in width calculation */
+    overflow-x: hidden; /* Hide any overflow */
 }
 
 select:focus, input[type="number"]:focus {
@@ -462,8 +460,8 @@ select:focus, input[type="number"]:focus {
 select.region-select,
 select.skill-select {
     font-size: 16px; /* QVGA Body size */
-    min-width: 100px; /* Reduced to prevent overlap */
-    max-width: 120px; /* Set maximum width */
+    min-width: 80px; /* Further reduced to prevent overlap */
+    max-width: 100px; /* Reduced maximum width */
 }
 select option {
     font-size: 16px !important; /* Larger for QVGA */
@@ -475,6 +473,7 @@ select option {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    overflow-x: hidden; /* Hide any overflow */
 }
 
 .checkbox-item {
