@@ -401,6 +401,7 @@ const MiniJobApp = {
         // Remove modal logic for employers - they should see the inline panel instead
         };
         const closePanel = () => {
+        console.log('🔍 closePanel called - role:', role.value, 'currentTab:', currentTab.value, 'selectedJob:', !!selectedJob.value, 'selectedApplicant:', !!selectedApplicant.value);
         selectedJob.value = null;
         selectedApplicant.value = null;
         inlineMessage.value = '';
@@ -410,7 +411,11 @@ const MiniJobApp = {
         // For seekers, ensure we stay on the job listing
         if (role.value === 'seeker') {
             filtersSelected.value = true;
+            // Explicitly ensure we're on the search tab
+            currentTab.value = 'search';
         }
+        
+        console.log('🔍 closePanel after - role:', role.value, 'currentTab:', currentTab.value, 'filtersSelected:', filtersSelected.value);
         
         // Update navigation when panel is closed
         if (window.navigationService) {
