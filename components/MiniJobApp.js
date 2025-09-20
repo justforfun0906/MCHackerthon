@@ -150,10 +150,10 @@ const MiniJobApp = {
         
         <!-- Navigation Hint -->
         <navigation-hint
-            v-if="role"
-            left-hint="Confirm"
-            right-hint="Return"
-            center-hint="↕ Navigate | ⏎ Select"
+            v-if="mockVerified || role"
+            :left-hint="leftSoftKeyHint"
+            :right-hint="rightSoftKeyHint"
+            :center-hint="centerHint"
         ></navigation-hint>
         </div>
     `,
@@ -273,6 +273,24 @@ const MiniJobApp = {
         const showReturnButton = computed(() => {
         // Always show return button when user has a role
         return !!role.value;
+        });
+
+        // Dynamic soft key hints
+        const leftSoftKeyHint = computed(() => {
+        if (!mockVerified.value) return 'Enter';
+        if (role.value) return 'Confirm';
+        return 'Enter';
+        });
+
+        const rightSoftKeyHint = computed(() => {
+        if (!mockVerified.value) return 'Clear/Quit';
+        if (role.value) return 'Return';
+        return 'Return';
+        });
+
+        const centerHint = computed(() => {
+        if (!mockVerified.value) return 'Direct Number Input';
+        return '↕ Navigate | ⏎ Select';
         });
 
         // Firestore subscribe
@@ -573,6 +591,9 @@ const MiniJobApp = {
         showMyJobsButton,
         myJobsButtonText,
         showReturnButton,
+        leftSoftKeyHint,
+        rightSoftKeyHint,
+        centerHint,
         viewJob,
         addJob,
         deleteJob,
