@@ -172,6 +172,13 @@ class NavigationService {
             }
         }, 100);
     }
+    
+    getCurrentFocusElement() {
+        if (this.currentFocusIndex >= 0 && this.currentFocusIndex < this.focusableElements.length) {
+            return this.focusableElements[this.currentFocusIndex];
+        }
+        return null;
+    }
 }
 
 // Global navigation instance

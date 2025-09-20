@@ -586,10 +586,26 @@ const MiniJobApp = {
                         }
                     } else if (showModal.value) {
                         confirmAction();
+                    } else if (!role.value) {
+                        // Role selection page - trigger the currently focused element
+                        if (window.navigationService) {
+                            const currentElement = window.navigationService.getCurrentFocusElement();
+                            if (currentElement && currentElement.click) {
+                                currentElement.click();
+                            }
+                        }
                     } else if (role.value === 'seeker' && !filtersSelected.value) {
                         // In filter selection, LSK could confirm selection
                         if (filters.region.length && filters.skill) {
                             proceedToJobList();
+                        } else {
+                            // If not all filters selected, trigger the currently focused element
+                            if (window.navigationService) {
+                                const currentElement = window.navigationService.getCurrentFocusElement();
+                                if (currentElement && currentElement.click) {
+                                    currentElement.click();
+                                }
+                            }
                         }
                     }
                     break;
@@ -624,6 +640,31 @@ const MiniJobApp = {
             }
         };
 
+        // Watch for mockVerified changes to update navigation when entering role selection
+        Vue.watch(mockVerified, (newVerified) => {
+            if (newVerified && window.navigationService) {
+                // When entering role selection page, activate navigation
+                window.navigationService.activate();
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    // Ensure first element is focused
+                    if (window.navigationService.focusableElements.length > 0) {
+                        window.navigationService.setFocus(0);
+                    }
+                }, 300);
+            }
+        });
+
+        // Watch for role changes to update navigation
+        Vue.watch(role, (newRole) => {
+            // Update navigation when role changes
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                }, 100);
+            }
+        });
+
         // Lifecycle
         onMounted(() => {
         updateTime();
@@ -632,7 +673,6 @@ const MiniJobApp = {
         
         // Initialize navigation
         if (window.navigationService) {
-            window.navigationService.activate();
             window.navigationService.setCallbacks({
             onEscape: () => {
                 // Left Soft Key - My Jobs action (if applicable)
@@ -645,6 +685,9 @@ const MiniJobApp = {
                 handleReturn();
             }
             });
+            
+            // Don't activate immediately, wait for the first page with focusable elements
+            // Navigation will be activated when mockVerified becomes true
         }
         });
         onUnmounted(() => { 
