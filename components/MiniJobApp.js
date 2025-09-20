@@ -401,7 +401,6 @@ const MiniJobApp = {
         // Remove modal logic for employers - they should see the inline panel instead
         };
         const closePanel = () => {
-        console.log('🔍 closePanel called - role:', role.value, 'currentTab:', currentTab.value, 'selectedJob:', !!selectedJob.value, 'selectedApplicant:', !!selectedApplicant.value);
         selectedJob.value = null;
         selectedApplicant.value = null;
         inlineMessage.value = '';
@@ -414,8 +413,6 @@ const MiniJobApp = {
             // Explicitly ensure we're on the search tab
             currentTab.value = 'search';
         }
-        
-        console.log('🔍 closePanel after - role:', role.value, 'currentTab:', currentTab.value, 'filtersSelected:', filtersSelected.value);
         
         // Update navigation when panel is closed
         if (window.navigationService) {
@@ -457,11 +454,6 @@ const MiniJobApp = {
         };
 
         const deleteJob = async (job) => {
-        console.log('🔥 deleteJob called with job:', job);
-        console.log('🔥 job.id:', job?.id);
-        console.log('🔥 job.id type:', typeof job?.id);
-        console.log('🔥 window.db exists?', !!window.db);
-        
         try {
             if (!window.db) {
                 console.log('❌ Firebase not initialized');
@@ -880,6 +872,9 @@ const MiniJobApp = {
                     } else if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
                         // From preferences menu, go to role chooser
                         handleReturn();
+                    } else if (role.value === 'seeker' && currentTab.value === 'search' && filtersSelected.value) {
+                        // From job listing page, go back to filter selection page (like employer logic)
+                        backToFilterSelection();
                     } else {
                         handleReturn();
                     }
