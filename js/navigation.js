@@ -40,6 +40,10 @@ class NavigationService {
                     event.preventDefault();
                     this.handleEscape();
                     break;
+                case 'F12':
+                    event.preventDefault();
+                    this.handleBack();
+                    break;
             }
         });
         
@@ -142,6 +146,12 @@ class NavigationService {
     handleEscape() {
         if (this.onEscapeCallback) {
             this.onEscapeCallback();
+        }
+    }
+    
+    handleBack() {
+        if (this.onBackCallback) {
+            this.onBackCallback();
         }
     }
     

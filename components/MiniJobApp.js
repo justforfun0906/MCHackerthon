@@ -150,11 +150,9 @@ const MiniJobApp = {
             :current-tab="currentTab"
             :tabs="navTabs"
             :show-my-jobs="showMyJobsButton"
-            :show-return="showReturnButton"
             :my-jobs-button-text="myJobsButtonText"
             @switch-tab="switchTab"
             @my-jobs-action="handleMyJobs"
-            @return-action="handleReturn"
         ></bottom-nav>
         
         <!-- Modal -->
@@ -166,18 +164,15 @@ const MiniJobApp = {
             @confirm="confirmAction"
         ></modal>
         
-        <!-- Navigation Hint -->
-        <navigation-hint
+        <!-- Soft Keys -->
+        <soft-keys
             v-if="mockVerified || role"
-            :left-hint="leftSoftKeyHint"
-            :right-hint="rightSoftKeyHint"
-            :center-hint="centerHint"
-        ></navigation-hint>
+            @softkeyclick="handleSoftKeyClick"
+        ></soft-keys>
         </div>
     `,
     components: {
         AppHeader,
-        NavigationHint,
         StatusBar,
         JobSection,
         BottomNav,
@@ -185,7 +180,8 @@ const MiniJobApp = {
         FilterBar,
         PhoneMock,
         PostForm,
-        SelectionPage
+        SelectionPage,
+        SoftKeys
     },
     setup() {
         const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
@@ -300,28 +296,7 @@ const MiniJobApp = {
         return 'My Jobs';
         });
 
-        const showReturnButton = computed(() => {
-        // Always show return button when user has a role
-        return !!role.value;
-        });
 
-        // Dynamic soft key hints
-        const leftSoftKeyHint = computed(() => {
-        if (!mockVerified.value) return 'Enter';
-        if (role.value) return 'Confirm';
-        return 'Enter';
-        });
-
-        const rightSoftKeyHint = computed(() => {
-        if (!mockVerified.value) return 'Clear/Quit';
-        if (role.value) return 'Return';
-        return 'Return';
-        });
-
-        const centerHint = computed(() => {
-        if (!mockVerified.value) return 'Direct Number Input';
-        return '↕ Navigate | ⏎ Select';
-        });
 
         // Firestore subscribe
         let unsubscribe = null;
@@ -596,6 +571,59 @@ const MiniJobApp = {
         }
         };
 
+        // Soft key click handler
+        const handleSoftKeyClick = (event) => {
+            const { key, action } = event.detail;
+            
+            switch (key) {
+                case 'lsk': // Left Soft Key - Confirm
+                    if (selectedJob.value) {
+                        if (role.value === 'seeker') {
+                            applySelected();
+                        } else if (role.value === 'employer') {
+                            // For employers, LSK could be used for other actions
+                            console.log('LSK pressed on job detail');
+                        }
+                    } else if (showModal.value) {
+                        confirmAction();
+                    } else if (role.value === 'seeker' && !filtersSelected.value) {
+                        // In filter selection, LSK could confirm selection
+                        if (filters.region.length && filters.skill) {
+                            proceedToJobList();
+                        }
+                    }
+                    break;
+                    
+                case 'rsk': // Right Soft Key - Return
+                    if (showModal.value) {
+                        closeModal();
+                    } else {
+                        handleReturn();
+                    }
+                    break;
+                    
+                case 'enter': // Center key - Input/Enter
+                    // Trigger the currently focused element or input field
+                    if (window.navigationService) {
+                        const currentElement = window.navigationService.getCurrentFocusElement();
+                        if (currentElement) {
+                            if (currentElement.click) {
+                                currentElement.click();
+                            } else if (currentElement.focus) {
+                                currentElement.focus();
+                            }
+                        }
+                    }
+                    
+                    // If no focused element, try to focus on the first input/button
+                    const firstInteractive = document.querySelector('input, button, .job-item, .panel-btn');
+                    if (firstInteractive && firstInteractive.focus) {
+                        firstInteractive.focus();
+                    }
+                    break;
+            }
+        };
+
         // Lifecycle
         onMounted(() => {
         updateTime();
@@ -659,10 +687,6 @@ const MiniJobApp = {
         rightSoftKey,
         showMyJobsButton,
         myJobsButtonText,
-        showReturnButton,
-        leftSoftKeyHint,
-        rightSoftKeyHint,
-        centerHint,
         viewJob,
         addJob,
         deleteJob,
@@ -684,7 +708,8 @@ const MiniJobApp = {
         logout,
         closePanel,
         handleMyJobs,
-        handleReturn
+        handleReturn,
+        handleSoftKeyClick
         };
     }
 };

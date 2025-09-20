@@ -43,10 +43,6 @@ const SelectionPage = {
                 </div>
             </div>
             
-            <div class="selection-hint">
-                Use ↑↓ arrows to navigate, Enter to {{ multiSelect ? 'toggle selection' : 'select' }}
-                <br>{{ multiSelect ? 'Escape when done selecting' : 'Escape to go back' }}
-            </div>
         </div>
     `,
     setup(props, { emit }) {
