@@ -152,13 +152,7 @@ const MiniJobApp = {
             </template>
         </div>
         
-        <!-- Bottom Navigation -->
-        <bottom-nav 
-            v-if="role"
-            :show-my-jobs="showMyJobsButton"
-            :my-jobs-button-text="myJobsButtonText"
-            @my-jobs-action="handleMyJobs"
-        ></bottom-nav>
+       
         
         <!-- Modal -->
         <modal
