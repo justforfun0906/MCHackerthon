@@ -29,6 +29,17 @@ const MiniJobApp = {
             </div>
             </template>
 
+            <!-- Employer Choice Selection (after choosing employer role) -->
+            <template v-else-if="role === 'employer' && !employerChoice">
+            <div class="job-section">
+                <div class="section-title">What would you like to do?</div>
+                <div class="job-list">
+                <div class="job-item" @click="chooseEmployerAction('post')">Post New Jobs</div>
+                <div class="job-item" @click="chooseEmployerAction('mine')">My Jobs</div>
+                </div>
+            </div>
+            </template>
+
             <!-- Search Jobs -->
             <template v-else-if="currentTab === 'search' && role === 'seeker'">
             <!-- Step 1: Selection Flow -->
@@ -104,7 +115,7 @@ const MiniJobApp = {
             </template>
 
             <!-- Post a Job (default view for employers) -->
-            <template v-else-if="role === 'employer' && currentTab === 'post'">
+            <template v-else-if="role === 'employer' && employerChoice === 'post'">
             <post-form
                 :regions="regions"
                 :roles="roles"
@@ -115,7 +126,7 @@ const MiniJobApp = {
             </template>
 
             <!-- Employer: My Jobs -->
-            <template v-else-if="currentTab === 'mine' && role === 'employer'">
+            <template v-else-if="role === 'employer' && employerChoice === 'mine'">
             <template v-if="!selectedJob">
                 <job-section :jobs="myJobs" @select-job="viewJob"></job-section>
             </template>
@@ -192,6 +203,7 @@ const MiniJobApp = {
         const filtersSelected = ref(false); // Track if region/skill filters are set
         const showSelectionPage = ref(null); // 'region' | 'skill' | null
         const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
+        const employerChoice = ref(null); // 'post' | 'mine' | null - for employer role selection
 
         // Dictionaries (EN)
         const regions = ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'];
@@ -289,8 +301,6 @@ const MiniJobApp = {
         }
         return 'My Jobs';
         });
-
-
 
         // Firestore subscribe
         let unsubscribe = null;
@@ -458,13 +468,30 @@ const MiniJobApp = {
             filters.region = [];
             filters.skill = '';
         } else if (r === 'employer') {
-            currentTab.value = 'post'; // Default to post form for employers
+            // Don't set currentTab immediately, wait for employer choice
+            employerChoice.value = null;
+        }
+        };
+
+        const chooseEmployerAction = (action) => {
+        employerChoice.value = action;
+        if (action === 'post') {
+            currentTab.value = 'post';
+        } else if (action === 'mine') {
+            currentTab.value = 'mine';
         }
         };
 
         const proceedToJobList = () => {
         if (filters.region.length && filters.skill) {
             filtersSelected.value = true;
+            // Focus on the first job after proceeding to job list
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 100);
+            }
         }
         };
 
@@ -497,12 +524,20 @@ const MiniJobApp = {
 
         const backToMenu = () => {
             selectionFlow.value = 'menu';
+            // Update navigation to focus on the first element
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 100);
+            }
         };
 
         const backToFilterSelection = () => {
         filtersSelected.value = false;
         selectedJob.value = null;
         selectionFlow.value = 'menu'; // Reset to menu
+        // Navigation will be updated by the filtersSelected watch
         };
 
         const closeModal = () => { 
@@ -524,6 +559,20 @@ const MiniJobApp = {
         const onLoginSuccess = () => {}; // real login removed
         const onMockVerified = () => { mockVerified.value = true; };
 
+        // Action handlers for new buttons
+        const handleMyJobs = () => {
+        // Toggle between Post form and My Jobs for employers
+        if (role.value === 'employer') {
+            if (employerChoice.value === 'post') {
+                employerChoice.value = 'mine';
+                currentTab.value = 'mine';
+            } else if (employerChoice.value === 'mine') {
+                employerChoice.value = 'post';
+                currentTab.value = 'post';
+            }
+        }
+        };
+
         // Logout: reset session state
         const logout = () => {
         role.value = null;
@@ -531,28 +580,27 @@ const MiniJobApp = {
         selectedJob.value = null;
         filters.region = '';
         filters.skill = '';
+        employerChoice.value = null; // Reset employer choice
         mockVerified.value = false; // back to verification screen
         };
 
-        // Action handlers for new buttons
-        const handleMyJobs = () => {
-        // Toggle between Post form and My Jobs for employers
-        if (role.value === 'employer') {
-            currentTab.value = currentTab.value === 'mine' ? 'post' : 'mine';
-        }
-        };
 
         const handleReturn = () => {
         if (selectedJob.value) {
-            // Return from job detail view to job list (for seekers) or post form (for employers)
+            // Return from job detail view to job list
             selectedJob.value = null;
-            if (role.value === 'employer') {
-            currentTab.value = 'post'; // Go to post form for employers
+            if (role.value === 'seeker') {
+                // For seekers, ensure we stay on the job listing
+                filtersSelected.value = true;
+            } else if (role.value === 'employer') {
+                // For employers, stay in current employer choice (post or mine)
             }
-            // For seekers, stay on the job listing (filtersSelected remains true)
         } else if (role.value === 'seeker' && filtersSelected.value) {
             // Return from job listing to filter selection page
             backToFilterSelection();
+        } else if (role.value === 'employer' && employerChoice.value) {
+            // Return from employer action to employer choice selection
+            employerChoice.value = null;
         } else {
             // Return to role selection (not logout)
             role.value = null;
@@ -561,6 +609,7 @@ const MiniJobApp = {
             filters.region = '';
             filters.skill = '';
             filtersSelected.value = false;
+            employerChoice.value = null;
             // Keep mockVerified as true so we go back to role selection
         }
         };
@@ -634,7 +683,7 @@ const MiniJobApp = {
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
                     window.navigationService.focusFirstElement();
-                }, 100);
+                }, 200);
             }
         });
 
@@ -644,7 +693,7 @@ const MiniJobApp = {
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
                     window.navigationService.focusFirstElement();
-                }, 100);
+                }, 200);
             }
         });
 
@@ -654,7 +703,7 @@ const MiniJobApp = {
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
                     window.navigationService.focusFirstElement();
-                }, 100);
+                }, 200);
             }
         });
 
@@ -664,13 +713,35 @@ const MiniJobApp = {
                 setTimeout(() => {
                     window.navigationService.updateFocusableElements();
                     window.navigationService.focusFirstElement();
-                }, 100);
+                }, 200);
+            }
+        });
+
+        // Watch for employerChoice changes to update navigation
+        Vue.watch(employerChoice, (newChoice) => {
+            if (window.navigationService) {
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 200);
             }
         });
 
         // Watch for filter changes to update soft key labels
         Vue.watch([() => filters.region, () => filters.skill], () => {
             updateSoftKeyLabels();
+        });
+
+        // Watch for filtersSelected changes to update navigation
+        Vue.watch(filtersSelected, (newValue) => {
+            if (window.navigationService) {
+                // When entering job list, focus on the first job
+                // When returning to preferences, focus on the first element
+                setTimeout(() => {
+                    window.navigationService.updateFocusableElements();
+                    window.navigationService.focusFirstElement();
+                }, 200); // Increased delay to ensure DOM is fully updated
+            }
         });
 
         // Function to update soft key labels
@@ -748,6 +819,7 @@ const MiniJobApp = {
         filtersSelected,
         selectionFlow,
         showSelectionPage,
+        employerChoice,
         regions,
         roles,
         storeTypes,
@@ -773,6 +845,7 @@ const MiniJobApp = {
         confirmAction,
         switchTab,
         chooseRole,
+        chooseEmployerAction,
         proceedToJobList,
         startRegionSelection,
         startSkillSelection,

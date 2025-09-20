@@ -328,7 +328,6 @@
     min-width: 0; /* Allow flexbox to shrink */
 }
 
-
 /* Action buttons (Confirm/Return) */
 .action-btn {
     background: #444; /* Darker background for action buttons */
@@ -347,16 +346,16 @@
 
 .action-btn:hover {
     background: #666;
-    border-color: #00ff00;
+    border-color: #0066cc;
 }
 
 .action-btn.my-jobs {
-    background: #006600; /* Dark green for my jobs */
-    border-color: #00ff00; /* Green border */
+    background: #004466; /* Dark blue for my jobs */
+    border-color: #0066cc; /* Blue border */
 }
 
 .action-btn.my-jobs:hover {
-    background: #008800;
+    background: #005588;
 }
 
 .action-btn.return {
@@ -619,11 +618,11 @@ select option {
 }
 
 .soft-key.left {
-    background: #006600; /* Green for primary action */
+    background: #004466; /* Blue for primary action */
 }
 
 .soft-key.left:hover:not(:disabled) {
-    background: #008800;
+    background: #005588;
 }
 
 .soft-key.right {

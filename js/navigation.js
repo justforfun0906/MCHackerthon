@@ -81,14 +81,27 @@ class NavigationService {
             '.job-item',
             '.modal-btn',
             '.panel-btn',
-            'input',
-            'select',
-            'button:not([disabled])',
-            '[tabindex]:not([tabindex="-1"])'
+            'input:not(.no-focus)',
+            'select:not(.no-focus)',
+            'button:not([disabled]):not(.no-focus)',
+            '[tabindex]:not([tabindex="-1"]):not(.no-focus)'
         ].join(',');
         
-        this.focusableElements = Array.from(document.querySelectorAll(selectors))
-            .filter(el => this.isElementVisible(el));
+        let elements = Array.from(document.querySelectorAll(selectors));
+        
+        // Also check shadow DOM elements (like soft-keys)
+        const softKeysElement = document.querySelector('soft-keys');
+        if (softKeysElement && softKeysElement.shadowRoot) {
+            const shadowElements = Array.from(softKeysElement.shadowRoot.querySelectorAll(selectors));
+            // Filter out elements with no-focus class or tabindex="-1"
+            const filteredShadowElements = shadowElements.filter(el => 
+                !el.classList.contains('no-focus') && 
+                el.getAttribute('tabindex') !== '-1'
+            );
+            elements = elements.concat(filteredShadowElements);
+        }
+        
+        this.focusableElements = elements.filter(el => this.isElementVisible(el));
     }
     
     isElementVisible(element) {
