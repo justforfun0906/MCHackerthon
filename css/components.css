@@ -166,14 +166,8 @@
     width: 100%; /* Full width within container */
     max-width: 180px; /* Set maximum width to prevent overflow */
     box-sizing: border-box; /* Include padding in width calculation */
-    resize: none; /* No visible resize handle for feature phone */
-    overflow-x: hidden; /* Disable horizontal scrolling */
-    overflow-y: auto; /* Allow vertical scroll without big chrome */
+    resize: vertical; /* Allow vertical resize only */
 }
-
-/* Hide textarea scrollbar (feature phone style) */
-.note-textarea { scrollbar-width: none; -ms-overflow-style: none; }
-.note-textarea::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 .address-input {
     font-size: 16px; /* QVGA Body size */
@@ -182,11 +176,10 @@
     border: 2px solid #fff; /* High contrast border */
     background: #000; /* Black background */
     color: #fff; /* White text */
-    width: 100px; /* Further reduced to prevent overlap */
-    max-width: 120px; /* Reduced maximum width */
+    width: 120px; /* Reduced to prevent overlap */
+    max-width: 140px; /* Set maximum width */
     font-weight: bold;
     box-sizing: border-box; /* Include padding in width calculation */
-    overflow-x: hidden; /* Disable horizontal scrolling */
 }
 /* 頂部狀態欄 - High Contrast */
 .status-bar {
@@ -356,6 +349,14 @@
     border-color: #0066cc;
 }
 
+.action-btn.my-jobs {
+    background: #004466; /* Dark blue for my jobs */
+    border-color: #0066cc; /* Blue border */
+}
+
+.action-btn.my-jobs:hover {
+    background: #005588;
+}
 
 .action-btn.return {
     background: #660000; /* Dark red for return */
@@ -410,7 +411,7 @@
     border-color: #00ff00; /* Green border on hover */
 }
 
-/* 表單樣式 - High Contrast, no horizontal scroll */
+/* 表單樣式 - High Contrast, with scroll */
 .filter-bar, .post-form {
     background: #111; /* Very dark background */
     border: 2px solid #fff; /* High contrast border */
@@ -422,7 +423,6 @@
     max-height: 180px; /* Set height for scrolling */
     box-sizing: border-box;
     overflow-y: auto; /* Enable vertical scrolling */
-    overflow-x: hidden; /* Disable horizontal scrolling */
     color: #fff; /* Pure white text */
 }
 
@@ -432,8 +432,6 @@
     justify-content: space-between;
     margin: 4px 0; /* Better spacing */
     gap: 8px;
-    flex-wrap: nowrap; /* Prevent wrapping */
-    overflow-x: hidden; /* Hide any overflow */
 }
 
 .field-row label {
@@ -445,8 +443,8 @@
 select, input[type="number"] {
     font-size: 16px; /* QVGA Body size */
     padding: 6px 12px; /* Better padding */
-    min-width: 80px; /* Further reduced to prevent overlap */
-    max-width: 100px; /* Reduced maximum width */
+    min-width: 100px; /* Reduced to prevent overlap */
+    max-width: 120px; /* Set maximum width */
     border-radius: 4px;
     border: 2px solid #fff; /* High contrast border */
     background: #000; /* Black background */
@@ -454,7 +452,6 @@ select, input[type="number"] {
     min-height: 32px; /* Adequate touch target */
     font-weight: bold;
     box-sizing: border-box; /* Include padding in width calculation */
-    overflow-x: hidden; /* Hide any overflow */
 }
 
 select:focus, input[type="number"]:focus {
@@ -465,8 +462,8 @@ select:focus, input[type="number"]:focus {
 select.region-select,
 select.skill-select {
     font-size: 16px; /* QVGA Body size */
-    min-width: 80px; /* Further reduced to prevent overlap */
-    max-width: 100px; /* Reduced maximum width */
+    min-width: 100px; /* Reduced to prevent overlap */
+    max-width: 120px; /* Set maximum width */
 }
 select option {
     font-size: 16px !important; /* Larger for QVGA */
@@ -478,7 +475,6 @@ select option {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    overflow-x: hidden; /* Hide any overflow */
 }
 
 .checkbox-item {
@@ -713,27 +709,6 @@ select option {
     gap: 8px; 
     margin-top: 12px; /* Better spacing */
 }
-.inline-job-panel .panel-actions-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* two buttons side-by-side */
-    gap: 8px;
-    margin-top: 12px;
-}
-.inline-job-panel .grid-btn {
-    background: #333;
-    border: 2px solid #fff;
-    color: #fff;
-    font-size: 16px;
-    padding: 8px 4px;
-    border-radius: 4px;
-    cursor: pointer;
-    min-height: 32px;
-    font-weight: bold;
-}
-.inline-job-panel .grid-btn.confirm { background: #004466; border-color: #0066cc; }
-.inline-job-panel .grid-btn.close { background: #660000; border-color: #aa0000; }
-.inline-job-panel .grid-btn:hover { filter: brightness(1.1); }
-.inline-job-panel .grid-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .inline-job-panel .panel-btn {
     flex: 1;
     background: #667eea;
@@ -762,58 +737,3 @@ select option {
 .inline-job-panel.full { height: 100%; display: flex; flex-direction: column; }
 .inline-job-panel.full .panel-line { flex: 0 0 auto; }
 .inline-job-panel.full .panel-actions { margin-top: auto; }
-
-/* Make inline job detail scrollable when content overflows */
-.inline-job-panel.scrollable {
-    max-height: 180px; /* match other content areas */
-    overflow-y: auto;
-}
-
-/* Scrollbar styling for inline job panel */
-.inline-job-panel.scrollable::-webkit-scrollbar {
-    width: 4px;
-}
-.inline-job-panel.scrollable::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.1);
-    border-radius: 2px;
-}
-.inline-job-panel.scrollable::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.5);
-    border-radius: 2px;
-    border: 1px solid #fff;
-}
-.inline-job-panel.scrollable::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.8);
-}
-
-
-
-/* Profile form tweaks */
-.profile-form input[type="text"], .profile-form textarea {
-    background: #000;
-    border: 2px solid #fff;
-    color: #fff;
-}
-
-/* Column layout: inputs under labels */
-.field-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: 6px 0;
-}
-.field-col label {
-    font-size: 12px;
-    color: #fff;
-    font-weight: bold;
-}
-.field-col input[type="text"] {
-    font-size: 16px;
-    padding: 6px 8px;
-}
-
-/* (mini-profile-header removed per latest request) */
-
-/* Hide scrollbars where desired */
-.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-.no-scrollbar::-webkit-scrollbar { display: none; }

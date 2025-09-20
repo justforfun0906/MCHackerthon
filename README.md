@@ -10,7 +10,6 @@ A modular 128x160 mini job application built with Vue.js 3 using CDN and organiz
 - 📱 Optimized for 128x160 cloud phone screens
 - ⚡ Real-time progress updates
 - 🎯 Modular Vue.js components for maintainability
- - 🔐 Firebase-backed profiles (Firestore `users/{userId}`)
 
 ## Project Structure
 
@@ -83,12 +82,6 @@ git push origin main
 ## Local Development
 
 Simply open `index.html` in any modern web browser. No build process or server required!
-
-## Profiles
-
-- Page: `My Profile` accessible from the seeker preferences menu and employer menu.
-- Storage: Firestore document at `users/{userId}` with fields: `name`, `bio`, `avatarUrl`, `phone`, `updatedAt`.
-- Identity: In mock mode, `userId` is `phone:{digits}` from the phone verification screen; otherwise falls back to `demo-user`.
 
 ## GitHub Pages Compatibility
 
