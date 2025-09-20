@@ -122,7 +122,7 @@ class SoftKeys extends HTMLElement {
             <div class="softkeys-container">
                 <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label="確認" data-key="lsk">
                     ${menuIcon}
-                    <span class="key-label">確認</span>
+                    <span class="key-label">Confirm</span>
                 </div>
                 <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="Enter" data-key="enter">
                     Enter
