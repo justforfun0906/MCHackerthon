@@ -194,21 +194,45 @@ class SoftKeys extends HTMLElement {
         centerKey.addEventListener("keydown", this.handleKeyPress);
         rightKey.addEventListener("keydown", this.handleKeyPress);
 
-        // D-pad 導航支援
+        // D-pad / hardware key 支援，包含更多實機上的返回鍵變體
         document.addEventListener("keydown", (e) => {
             // Check if we're in a selection page
             const isInSelectionPage = document.querySelector('.selection-page') !== null;
-            
+            const activeEl = document.activeElement;
+            const isTextInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
             if (e.key === "SoftLeft" || e.key === "Escape") {
                 e.preventDefault();
                 leftKey.click();
             } else if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 centerKey.click();
-            } else if (e.key === "SoftRight" || e.key === "F12") {
+            } else if (
+                e.key === "SoftRight" ||
+                e.key === "F12" ||
+                e.key === "BrowserBack" ||
+                e.key === "GoBack" ||
+                e.key === "Back" ||
+                (e.key === "Backspace" && !isTextInput)
+            ) {
                 e.preventDefault();
                 rightKey.click();
             }
+        });
+
+        // 某些環境（Hybrid/OS）會發出自定義返回事件
+        window.addEventListener('backbutton', (e) => {
+            try { e.preventDefault(); } catch {}
+            rightKey.click();
+        });
+        // Tizen / 特定平台
+        window.addEventListener('tizenhwkey', (e) => {
+            try {
+                if (e && (e.key === 'back' || e.keyName === 'back')) {
+                    e.preventDefault();
+                    rightKey.click();
+                }
+            } catch {}
         });
 
         // 與導航系統整合
