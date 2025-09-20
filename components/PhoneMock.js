@@ -106,6 +106,12 @@ const PhoneMock = {
 
     // Soft key actions
     handleSoftKeyClick(event) {
+      // Only handle events if this component should be active
+      if (this.$parent && this.$parent.mockVerified) {
+        // If already verified, don't handle any soft key events
+        return;
+      }
+      
       const { key, action } = event.detail;
       
       switch (key) {
@@ -123,7 +129,13 @@ const PhoneMock = {
               // Clear the input
               this.phone = '';
               this.$nextTick(() => {
-                this.$refs.phoneInput.focus();
+                try {
+                  if (this.$refs.phoneInput) {
+                    this.$refs.phoneInput.focus();
+                  }
+                } catch (e) {
+                  console.warn('PhoneMock: Could not focus phone input after clear:', e);
+                }
               });
             } else {
               // Quit - emit an event or handle app exit
@@ -135,7 +147,13 @@ const PhoneMock = {
               this.code = '';
               this.error = '';
               this.$nextTick(() => {
-                this.$refs.codeInput.focus();
+                try {
+                  if (this.$refs.codeInput) {
+                    this.$refs.codeInput.focus();
+                  }
+                } catch (e) {
+                  console.warn('PhoneMock: Could not focus code input after clear:', e);
+                }
               });
             } else {
               // Back to phone input
@@ -146,9 +164,21 @@ const PhoneMock = {
           
         case 'enter': // Center key - Input focus
           if (this.stage === 'input') {
-            this.$refs.phoneInput.focus();
+            try {
+              if (this.$refs.phoneInput) {
+                this.$refs.phoneInput.focus();
+              }
+            } catch (e) {
+              console.warn('PhoneMock: Could not focus phone input:', e);
+            }
           } else if (this.stage === 'code') {
-            this.$refs.codeInput.focus();
+            try {
+              if (this.$refs.codeInput) {
+                this.$refs.codeInput.focus();
+              }
+            } catch (e) {
+              console.warn('PhoneMock: Could not focus code input:', e);
+            }
           }
           break;
       }
