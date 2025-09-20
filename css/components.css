@@ -183,17 +183,22 @@
 /* 表單樣式 */
 .filter-bar, .post-form {
     background: rgba(255,255,255,0.05);
-    border-radius: 4px;
-    padding: 4px;
-    margin-bottom: 4px;
+    border-radius: 2px;
+    padding: 2px;
+    margin-bottom: 2px;
     font-size: 6px;
+    max-width: 120px;
+    max-height: 90px;
+    box-sizing: border-box;
+    overflow-y: auto;
 }
 
 .field-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 2px 0;
+    margin: 1px 0;
+    gap: 2px;
 }
 
 .field-row label {
@@ -230,7 +235,7 @@ select option {
 
 .actions {
     text-align: center;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 /* Inline Job Detail Panel */
