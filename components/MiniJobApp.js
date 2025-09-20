@@ -742,6 +742,7 @@ const MiniJobApp = {
         const handleReturn = () => {
         // Seeker: dedicated region/skill pages
         if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
+            filtersSelected.value = false;
             backToMenu();
             return;
         }
@@ -859,23 +860,30 @@ const MiniJobApp = {
                     break;
                     
                 case 'rsk': // Right Soft Key - Return
+                    console.log('🔍 RSK pressed - role:', role.value, 'currentTab:', currentTab.value, 'filtersSelected:', filtersSelected.value, 'selectedJob:', !!selectedJob.value, 'showModal:', showModal.value);
                     if (showModal.value) {
                         closeModal();
                     } else if (selectedJob.value || selectedApplicant.value) {
                         // Back to list from job detail or applicant detail
+                        console.log('🔍 RSK: Closing panel');
                         closePanel();
                     } else if (currentTab.value === 'profile') {
+                        console.log('🔍 RSK: From profile, calling handleReturn');
                         handleReturn();
                     } else if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
                         // From dedicated selection pages, go back to preferences menu
+                        console.log('🔍 RSK: From region/skill selection, calling backToMenu');
                         backToMenu();
                     } else if (role.value === 'seeker' && currentTab.value === 'search' && !filtersSelected.value) {
                         // From preferences menu, go to role chooser
+                        console.log('🔍 RSK: From preferences menu, calling handleReturn');
                         handleReturn();
                     } else if (role.value === 'seeker' && currentTab.value === 'search' && filtersSelected.value) {
                         // From job listing page, go back to filter selection page (like employer logic)
+                        console.log('🔍 RSK: From job listing, calling backToFilterSelection');
                         backToFilterSelection();
                     } else {
+                        console.log('🔍 RSK: Default case, calling handleReturn');
                         handleReturn();
                     }
                     break;
