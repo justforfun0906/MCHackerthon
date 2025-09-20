@@ -3,11 +3,6 @@
 const MiniJobApp = {
     template: `
         <div class="app">
-        <!-- App Header -->
-        <app-header 
-            :title="headerTitle"
-        ></app-header>
-        
         <!-- Status Bar -->
         <status-bar :current-time="currentTime"></status-bar>
         
@@ -177,7 +172,6 @@ const MiniJobApp = {
         </div>
     `,
     components: {
-        AppHeader,
         StatusBar,
         JobSection,
         BottomNav,
@@ -264,22 +258,6 @@ const MiniJobApp = {
         });
 
         // Header state
-        const headerTitle = computed(() => {
-        if (!mockVerified.value) return 'Phone Verification';
-        if (!role.value) return 'Choose Role';
-        if (currentTab.value === 'profile') return 'My Profile';
-        if (role.value === 'seeker') {
-            if (selectedJob.value) return `Job: ${selectedJob.value.region}`;
-            if (filtersSelected.value) return 'Job Listings';
-            return 'Select Preferences';
-        }
-        if (role.value === 'employer') {
-            if (currentTab.value === 'post') return 'Post New Job';
-            if (currentTab.value === 'mine') return 'My Jobs';
-        }
-        return 'Mini Job App';
-        });
-
         const leftSoftKey = computed(() => {
         if (selectedJob.value) return 'Options';
         if (role.value) return 'Menu';
@@ -329,12 +307,6 @@ const MiniJobApp = {
         }
         
         // Remove modal logic for employers - they should see the inline panel instead
-        };
-        const applySelected = async () => {
-        if (!selectedJob.value || applyingDone.value) return;
-        applyLoading.value = true;
-        await applyJob(selectedJob.value);
-        applyLoading.value = false;
         };
         const closePanel = () => {
         selectedJob.value = null;
@@ -650,7 +622,7 @@ const MiniJobApp = {
                         }
                     } else if (selectedJob.value) {
                         if (role.value === 'seeker') {
-                            applySelected();
+                            // Apply functionality removed - do nothing
                         } else if (role.value === 'employer') {
                             // Employer: LSK triggers delete confirmation
                             deleteSelected();
@@ -866,7 +838,7 @@ const MiniJobApp = {
                     confirmAction();
                 } else if (selectedJob.value) {
                     if (role.value === 'seeker') {
-                        applySelected();
+                        // Apply functionality removed - do nothing
                     } else if (role.value === 'employer') {
                         deleteSelected();
                     }
@@ -967,7 +939,6 @@ const MiniJobApp = {
         filteredJobs,
         myJobs,
         navTabs,
-        headerTitle,
         leftSoftKey,
         rightSoftKey,
         viewJob,
@@ -975,7 +946,6 @@ const MiniJobApp = {
         deleteJob,
         deleteSelected,
         applyJob,
-        applySelected,
         closeModal,
         confirmAction,
         switchTab,
