@@ -1,110 +1,226 @@
-.note-textarea {
-    font-size: 5px;
-    padding: 1px 2px;
+/* App Header - 40px height for QVGA with high contrast */
+.app-header {
+    height: 40px;
+    background: #000; /* Pure black background */
+    border-bottom: 2px solid #fff; /* High contrast border */
+    position: relative;
 }
-.address-input {
-    font-size: 6px;
-    padding: 1px 2px;
-    border-radius: 2px;
-    border: 1px solid rgba(255,255,255,0.3);
-    background: rgba(0,0,0,0.2);
+
+.header-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    position: relative;
+}
+
+.header-title {
+    font-size: 24px; /* QVGA Header size */
+    font-weight: 700; /* Bold for headers */
+    color: #fff; /* Pure white for high contrast */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Use ellipsis instead of marquee */
+    max-width: 200px; /* Increased since no soft keys */
+    text-shadow: 2px 2px 4px #000; /* Text shadow for better readability */
+}
+
+/* D-pad Focus Styles - High Contrast */
+.dpad-focus {
+    outline: 3px solid #00ff00 !important; /* Bright green for visibility */
+    outline-offset: 2px;
+    background: rgba(0, 255, 0, 0.2) !important; /* Green highlight */
+    border: 2px solid #fff !important; /* White border for extra contrast */
+}
+
+/* Grid-based layout for better space utilization - No scroll */
+.job-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns for better space usage */
+    gap: 8px;
+    /* Removed max-height and overflow-y to eliminate scrolling */
+}
+
+.job-item.grid-item {
+    padding: 6px;
+    text-align: center;
+    min-height: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Compact form layout */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.form-grid .field-row {
+    flex-direction: column;
+    align-items: stretch;
+    margin: 2px 0;
+}
+
+.form-grid label {
+    font-size: 12px; /* Footnote size for labels */
+    margin-bottom: 2px;
+}
+
+/* Compact navigation hint */
+/* Compact navigation hint */
+.nav-hint {
+    position: fixed;
+    bottom: 4px;
+    left: 8px; /* Match 8pt margins */
+    right: 8px;
+    height: 16px; /* Smaller for more content space */
+    background: rgba(0, 0, 0, 0.9);
     color: white;
-    width: 60px;
-}
-/* 發布工作表單內容可滑動 */
-.postform-scroll {
-    max-height: 50px;
-    overflow-y: auto;
-    margin-bottom: 4px;
-}
-/* 頂部狀態欄 */
-.status-bar {
-    height: 12px;
-    background: rgba(0,0,0,0.3);
+    font-size: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 4px;
-    font-size: 6px;
+    padding: 0 6px;
+    border-radius: 2px;
+    z-index: 1000;
 }
 
-/* 用戶資訊卡 */
-.user-card {
-    background: rgba(255,255,255,0.1);
+.note-textarea {
+    font-size: 16px; /* QVGA Body size */
+    padding: 8px 12px; /* Better padding */
+    background: #000; /* Black background */
+    color: #fff; /* White text */
+    border: 2px solid #fff; /* High contrast border */
     border-radius: 4px;
-    padding: 4px;
-    margin-bottom: 4px;
-    backdrop-filter: blur(10px);
+    min-height: 40px;
+    width: 100%; /* Full width within container */
+    max-width: 180px; /* Set maximum width to prevent overflow */
+    box-sizing: border-box; /* Include padding in width calculation */
+    resize: vertical; /* Allow vertical resize only */
+}
+
+.address-input {
+    font-size: 16px; /* QVGA Body size */
+    padding: 8px 12px; /* Better padding */
+    border-radius: 4px;
+    border: 2px solid #fff; /* High contrast border */
+    background: #000; /* Black background */
+    color: #fff; /* White text */
+    width: 120px; /* Reduced to prevent overlap */
+    max-width: 140px; /* Set maximum width */
+    font-weight: bold;
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+/* 頂部狀態欄 - High Contrast */
+.status-bar {
+    height: 24px; /* Increased for QVGA */
+    background: #000; /* Pure black */
+    border-bottom: 1px solid #fff; /* High contrast border */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px; /* 8pt margins */
+    font-size: 12px; /* QVGA Footnote size */
+    color: #fff; /* Pure white text */
+}
+
+/* 用戶資訊卡 - High Contrast */
+.user-card {
+    background: #222; /* Dark grey background */
+    border: 2px solid #fff; /* High contrast white border */
+    border-radius: 8px; /* Larger radius for QVGA */
+    padding: 8px; /* 8pt margins */
+    margin-bottom: 8px;
+    color: #fff; /* Pure white text */
 }
 
 .user-info {
     display: flex;
     align-items: center;
-    font-size: 7px;
+    font-size: 16px; /* QVGA Body size */
+    color: #fff;
 }
 
 .avatar {
-    width: 16px;
-    height: 16px;
-    background: #ffd700;
+    width: 32px; /* Larger for QVGA */
+    height: 32px;
+    background: #ffff00; /* Bright yellow for high contrast */
+    color: #000; /* Black text on yellow */
+    border: 2px solid #fff; /* White border */
     border-radius: 50%;
-    margin-right: 4px;
+    margin-right: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
+    font-size: 16px; /* QVGA Body size */
+    font-weight: bold;
 }
 
 .stats {
     display: flex;
     justify-content: space-between;
-    margin-top: 2px;
-    font-size: 6px;
+    margin-top: 4px;
+    font-size: 12px; /* QVGA Footnote size */
+    color: #fff;
 }
 
-/* 工作列表 */
+/* 工作列表 - High Contrast, with scroll */
 .job-section {
     flex: 1;
-    background: rgba(255,255,255,0.05);
-    border-radius: 4px;
-    padding: 4px;
-    margin-bottom: 4px;
-    max-height: 80px;
-    overflow-y: auto;
+    background: #111; /* Very dark grey */
+    border: 2px solid #fff; /* High contrast border */
+    border-radius: 8px; /* Larger for QVGA */
+    padding: 8px; /* 8pt margins */
+    margin-bottom: 8px;
+    max-height: 180px; /* Set height for scrolling */
+    overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .section-title {
-    font-size: 7px;
-    font-weight: bold;
-    margin-bottom: 3px;
+    font-size: 16px; /* QVGA Headline size */
+    font-weight: 900; /* Black weight for headlines */
+    margin-bottom: 8px;
     text-align: center;
+    color: #fff; /* Pure white */
+    text-shadow: 1px 1px 2px #000; /* Text shadow for readability */
 }
 
 .job-list {
-    max-height: 50px;
-    overflow-y: auto;
+    max-height: 120px; /* Set height for scrolling */
+    overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .job-item {
-    background: rgba(255,255,255,0.1);
-    border-radius: 2px;
-    padding: 3px;
-    margin-bottom: 2px;
+    background: #333; /* Dark grey background */
+    border: 1px solid #fff; /* High contrast border */
+    border-radius: 4px;
+    padding: 8px; /* Better padding for QVGA */
+    margin-bottom: 4px;
     cursor: pointer;
-    transition: background 0.2s;
-    font-size: 6px;
+    transition: all 0.2s;
+    font-size: 16px; /* QVGA Body size */
+    min-height: 24px; /* Ensure adequate touch target */
+    color: #fff; /* Pure white text */
 }
 
 .job-item:hover {
-    background: rgba(255,255,255,0.2);
+    background: #555; /* Lighter grey on hover */
+    border-color: #00ff00; /* Green border on hover */
 }
 
 .job-item.completed {
-    background: rgba(0,255,0,0.2);
+    background: #004400; /* Dark green */
+    border-color: #00ff00; /* Bright green border */
 }
 
 .job-item.in-progress {
-    background: rgba(255,255,0,0.2);
+    background: #444400; /* Dark yellow */
+    border-color: #ffff00; /* Bright yellow border */
 }
 
 .job-info {
@@ -114,114 +230,197 @@
 }
 
 .job-reward {
-    color: #ffd700;
+    color: #ffff00; /* Bright yellow for high contrast */
     font-weight: bold;
+    text-shadow: 1px 1px 2px #000; /* Black shadow for readability */
 }
 
-/* 底部按鈕區 */
+/* 底部按鈕區 - High Contrast with action buttons */
 .bottom-nav {
-    height: 20px;
-    background: rgba(0,0,0,0.3);
+    height: 40px; /* Increased for QVGA */
+    background: #000; /* Pure black */
+    border-top: 2px solid #fff; /* High contrast border */
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between; /* Changed to space-between for action buttons */
     align-items: center;
+    padding: 0 8px; /* 8pt margins */
+}
+
+.nav-tabs {
+    display: flex;
+    justify-content: center;
+    flex: 1;
+    gap: 4px; /* Reduced gap to fit QVGA better */
+    min-width: 0; /* Allow flexbox to shrink */
 }
 
 .nav-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 6px;
+    background: #333; /* Dark grey background */
+    border: 2px solid #fff; /* High contrast border */
+    color: #fff; /* Pure white text */
+    font-size: 14px; /* Reduced for QVGA space constraints */
     cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 2px;
-    transition: background 0.2s;
+    padding: 6px 8px; /* Reduced padding for smaller screens */
+    border-radius: 4px;
+    transition: all 0.2s;
+    min-height: 28px; /* Reduced height */
+    font-weight: bold;
+    flex: 1; /* Allow buttons to share space */
+    max-width: 80px; /* Limit button width */
 }
 
 .nav-btn.active {
-    background: rgba(255,255,255,0.2);
+    background: #fff; /* White background when active */
+    color: #000; /* Black text when active */
 }
 
 .nav-btn:hover {
-    background: rgba(255,255,255,0.1);
+    background: #555; /* Lighter grey on hover */
+    border-color: #00ff00; /* Green border on hover */
 }
 
-/* 彈窗 */
+/* Action buttons (Confirm/Return) */
+.action-btn {
+    background: #444; /* Darker background for action buttons */
+    border: 2px solid #fff;
+    color: #fff;
+    font-size: 12px; /* Smaller for QVGA */
+    cursor: pointer;
+    padding: 4px 6px; /* Reduced padding */
+    border-radius: 4px;
+    transition: all 0.2s;
+    min-height: 28px; /* Smaller height */
+    font-weight: bold;
+    min-width: 50px; /* Reduced min width */
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.action-btn:hover {
+    background: #666;
+    border-color: #00ff00;
+}
+
+.action-btn.my-jobs {
+    background: #006600; /* Dark green for my jobs */
+    border-color: #00ff00; /* Green border */
+}
+
+.action-btn.my-jobs:hover {
+    background: #008800;
+}
+
+.action-btn.return {
+    background: #660000; /* Dark red for return */
+}
+
+.action-btn.return:hover {
+    background: #880000;
+}
+
+/* 彈窗 - High Contrast */
 .modal {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9); /* Very dark overlay */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .modal-content {
-    background: white;
-    color: black;
-    padding: 8px;
-    border-radius: 4px;
+    background: #fff; /* Pure white background */
+    color: #000; /* Pure black text */
+    border: 3px solid #000; /* Black border */
+    padding: 16px; /* Better padding for QVGA */
+    border-radius: 8px;
     text-align: center;
-    font-size: 7px;
-    max-width: 100px;
+    font-size: 16px; /* QVGA Body size */
+    max-width: 200px; /* Increased for QVGA */
+    min-height: 80px;
+    font-weight: bold;
 }
 
 .modal-btn {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 3px 6px;
-    border-radius: 2px;
-    font-size: 6px;
-    margin: 2px;
+    background: #000; /* Black background */
+    color: #fff; /* White text */
+    border: 2px solid #fff; /* White border */
+    padding: 8px 16px; /* Better padding */
+    border-radius: 4px;
+    font-size: 16px; /* QVGA Body size */
+    margin: 4px;
     cursor: pointer;
+    min-height: 32px; /* Adequate touch target */
+    font-weight: bold;
+    transition: all 0.2s;
 }
 
-/* 表單樣式 */
+.modal-btn:hover {
+    background: #333; /* Dark grey on hover */
+    border-color: #00ff00; /* Green border on hover */
+}
+
+/* 表單樣式 - High Contrast, with scroll */
 .filter-bar, .post-form {
-    background: rgba(255,255,255,0.05);
-    border-radius: 2px;
-    padding: 2px;
-    margin-bottom: 2px;
-    font-size: 6px;
-    max-width: 120px;
-    max-height: 90px;
+    background: #111; /* Very dark background */
+    border: 2px solid #fff; /* High contrast border */
+    border-radius: 8px; /* Larger for QVGA */
+    padding: 8px; /* 8pt margins */
+    margin-bottom: 8px;
+    font-size: 16px; /* QVGA Body size */
+    max-width: 220px; /* Increased for QVGA */
+    max-height: 180px; /* Set height for scrolling */
     box-sizing: border-box;
-    overflow-y: auto;
+    overflow-y: auto; /* Enable vertical scrolling */
+    color: #fff; /* Pure white text */
 }
 
 .field-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 1px 0;
-    gap: 2px;
+    margin: 4px 0; /* Better spacing */
+    gap: 8px;
 }
 
 .field-row label {
-    font-size: 6px;
-    margin-right: 4px;
+    font-size: 16px; /* QVGA Body size */
+    margin-right: 8px;
+    color: #fff; /* Pure white text */
+    font-weight: bold;
 }
 select, input[type="number"] {
-    font-size: 6px; 
-    padding: 2px 4px;
-    min-width: 80px;
-    border-radius: 3px;
-    border: 1px solid rgba(255,255,255,0.5);
-    background: rgba(0,0,0,0.3);
-    color: white;
+    font-size: 16px; /* QVGA Body size */
+    padding: 6px 12px; /* Better padding */
+    min-width: 100px; /* Reduced to prevent overlap */
+    max-width: 120px; /* Set maximum width */
+    border-radius: 4px;
+    border: 2px solid #fff; /* High contrast border */
+    background: #000; /* Black background */
+    color: #fff; /* White text */
+    min-height: 32px; /* Adequate touch target */
+    font-weight: bold;
+    box-sizing: border-box; /* Include padding in width calculation */
 }
+
+select:focus, input[type="number"]:focus {
+    outline: 3px solid #00ff00; /* Green focus outline */
+    border-color: #00ff00;
+}
+
 select.region-select,
 select.skill-select {
-    font-size: 6px;
-    min-width: 90px;
+    font-size: 16px; /* QVGA Body size */
+    min-width: 100px; /* Reduced to prevent overlap */
+    max-width: 120px; /* Set maximum width */
 }
 select option {
-    font-size: 12px !important;
-    color: black; 
+    font-size: 16px !important; /* Larger for QVGA */
+    color: #000; /* Black text on white background */
+    background: #fff; /* White background for options */
+    font-weight: bold;
 }
 .checkbox-row {
     display: flex;
@@ -230,44 +429,122 @@ select option {
 }
 
 .checkbox-item {
-    font-size: 6px;
+    font-size: 16px; /* QVGA Body size */
+    margin: 4px 0; /* Better spacing */
+    max-width: 100px; /* Prevent overflow */
 }
 
 .actions {
     text-align: center;
-    margin-top: 2px;
+    margin-top: 8px; /* Better spacing */
+}
+
+.post-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.search-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* Filter Selection Page */
+.filter-selection-page {
+    padding: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Custom scrollbar styling for QVGA */
+.job-section::-webkit-scrollbar,
+.job-list::-webkit-scrollbar,
+.post-form::-webkit-scrollbar,
+.filter-bar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.job-section::-webkit-scrollbar-track,
+.job-list::-webkit-scrollbar-track,
+.post-form::-webkit-scrollbar-track,
+.filter-bar::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+
+.job-section::-webkit-scrollbar-thumb,
+.job-list::-webkit-scrollbar-thumb,
+.post-form::-webkit-scrollbar-thumb,
+.filter-bar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.5);
+    border-radius: 3px;
+    border: 1px solid #fff;
+}
+
+.job-section::-webkit-scrollbar-thumb:hover,
+.job-list::-webkit-scrollbar-thumb:hover,
+.post-form::-webkit-scrollbar-thumb:hover,
+.filter-bar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.8);
 }
 
 /* Inline Job Detail Panel */
 .inline-job-panel {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 4px;
-    padding: 4px;
-    margin-top: 2px;
-    font-size: 6px;
+    border-radius: 8px; /* Larger for QVGA */
+    padding: 8px; /* 8pt margins */
+    margin-top: 8px;
+    font-size: 16px; /* QVGA Body size */
 }
 .inline-job-panel .panel-title {
-    font-weight: bold;
-    font-size: 7px;
-    margin-bottom: 2px;
+    font-weight: 900; /* Black weight for headlines */
+    font-size: 16px; /* QVGA Headline size */
+    margin-bottom: 8px;
     text-align: center;
 }
-.inline-job-panel .panel-line { margin: 1px 0; }
-.inline-job-panel .panel-actions { display: flex; gap: 4px; margin-top: 4px; }
+.inline-job-panel .panel-line { 
+    margin: 4px 0; /* Better spacing */
+    font-size: 16px; /* QVGA Body size */
+}
+.inline-job-panel .panel-actions { 
+    display: flex; 
+    gap: 8px; 
+    margin-top: 12px; /* Better spacing */
+}
 .inline-job-panel .panel-btn {
     flex: 1;
     background: #667eea;
     border: none;
     color: #fff;
-    font-size: 6px;
-    padding: 3px 2px;
-    border-radius: 2px;
+    font-size: 16px; /* QVGA Body size */
+    padding: 8px 4px; /* Better padding */
+    border-radius: 4px;
     cursor: pointer;
+    min-height: 32px; /* Adequate touch target */
 }
 .inline-job-panel .panel-btn.secondary { background: #555; }
+.inline-job-panel .panel-btn.delete-btn { 
+    background: #cc0000; /* Red background for delete */
+    border: 1px solid #ff0000; /* Red border */
+}
+.inline-job-panel .panel-btn.delete-btn:hover { 
+    background: #ff0000; /* Brighter red on hover */
+}
 .inline-job-panel .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.inline-job-panel .panel-msg { margin-top: 3px; color: #ffd700; font-size: 6px; }
+.inline-job-panel .panel-msg { 
+    margin-top: 8px; 
+    color: #ffd700; 
+    font-size: 16px; /* QVGA Body size */
+}
 .inline-job-panel.full { height: 100%; display: flex; flex-direction: column; }
 .inline-job-panel.full .panel-line { flex: 0 0 auto; }
 .inline-job-panel.full .panel-actions { margin-top: auto; }

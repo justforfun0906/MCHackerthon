@@ -2,51 +2,49 @@
 const PostForm = {
     template: `
         <form class="post-form" @submit.prevent="onSubmit">
-            <div class="postform-scroll">
-                <div class="field-row">
-                    <label>Region</label>
-                    <select v-model="form.region" required class="region-select">
-                        <option value="" disabled>Select</option>
-                        <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
-                    </select>
-                </div>
-                <div class="field-row">
-                    <label>Store Type</label>
-                    <select v-model="form.storeType" required>
-                        <option value="" disabled>Select</option>
-                        <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
-                    </select>
-                </div>
-                <div class="field-row">
-                    <label>Address</label>
-                    <input type="text" v-model="form.address" placeholder="Enter address" class="address-input" />
-                </div>
-                <div class="field-row">
-                    <label>Roles</label>
-                    <div class="checkbox-row">
-                        <label v-for="r in roles" :key="r" class="checkbox-item">
-                            <input type="checkbox" :value="r" v-model="form.roles" /> {{ r }}
-                        </label>
-                    </div>
-                </div>
-                <div class="field-row">
-                    <label>Time Slot</label>
-                    <select v-model="form.time" required>
-                        <option value="" disabled>Select</option>
-                        <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
-                    </select>
-                </div>
-                <div class="field-row">
-                    <label>Openings</label>
-                    <input type="number" v-model.number="form.count" min="1" max="20" required />
-                </div>
-                <div class="field-row">
-                    <label>Notes</label>
-                    <textarea v-model="form.note" placeholder="Enter job notes..." rows="3" class="note-textarea"></textarea>
+            <div class="field-row">
+                <label>Region</label>
+                <select v-model="form.region" required class="region-select">
+                    <option value="" disabled>Select</option>
+                    <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <label>Store Type</label>
+                <select v-model="form.storeType" required>
+                    <option value="" disabled>Select</option>
+                    <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <label>Address</label>
+                <input type="text" v-model="form.address" placeholder="Enter address" class="address-input" />
+            </div>
+            <div class="field-row">
+                <label>Roles</label>
+                <div class="checkbox-row">
+                    <label v-for="r in roles" :key="r" class="checkbox-item">
+                        <input type="checkbox" :value="r" v-model="form.roles" /> {{ r }}
+                    </label>
                 </div>
             </div>
-            <div class="actions">
-                <button type="submit" class="modal-btn">Post</button>
+            <div class="field-row">
+                <label>Time Slot</label>
+                <select v-model="form.time" required>
+                    <option value="" disabled>Select</option>
+                    <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <label>Openings</label>
+                <input type="number" v-model.number="form.count" min="1" max="20" required />
+            </div>
+            <div class="field-row">
+                <label>Notes</label>
+                <textarea v-model="form.note" placeholder="Enter job notes..." rows="3" class="note-textarea"></textarea>
+            </div>
+            <div class="field-row">
+                <button type="submit" class="modal-btn post-btn">Post Job</button>
             </div>
         </form>
     `,
