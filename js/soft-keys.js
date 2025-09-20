@@ -120,9 +120,9 @@ class SoftKeys extends HTMLElement {
         const html = document.createElement("div");
         html.innerHTML = `
             <div class="softkeys-container">
-                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label="confirm" data-key="lsk">
+                <div class="soft-key left no-navigation" tabindex="-1" role="button" aria-label=Confirm" data-key="lsk">
                     ${menuIcon}
-                    <span class="key-label">confirm</span>
+                    <span class="key-label">Confirm</span>
                 </div>
                 <div class="soft-key center no-focus no-navigation" tabindex="-1" role="button" aria-label="Enter" data-key="enter">
                     Enter

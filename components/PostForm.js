@@ -82,7 +82,6 @@ const PostForm = {
         onSubmit() {
             if (!this.form.region || !this.form.storeType || !this.form.time || this.form.roles.length === 0) return;
             const payload = {
-                id: Date.now(),
                 region: this.form.region,
                 storeType: this.form.storeType,
                 address: this.form.address,

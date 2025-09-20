@@ -136,12 +136,6 @@ const MiniJobApp = {
                 <div class="panel-line">Remaining: {{ selectedJob.count }}</div>
                 <div class="panel-line">Address: {{ selectedJob.address || 'Not specified' }}</div>
                 <div class="panel-line">Notes: {{ selectedJob.note || 'None' }}</div>
-                <div class="panel-actions">
-                    <button class="panel-btn delete-btn" @click="deleteSelected" v-if="role === 'employer'">
-                    Delete Job
-                    </button>
-                    <!-- Back to list now controlled by soft keys -->
-                </div>
                 <!-- Actions moved to soft keys: LSK = Confirm (Delete), RSK = Close -->
                 <div class="panel-msg" v-if="inlineMessage">{{ inlineMessage }}</div>
                 </div>
@@ -279,15 +273,26 @@ const MiniJobApp = {
         }
         const col = window.db.collection('jobs');
         unsubscribe = col.orderBy('createdAt', 'desc').onSnapshot(snap => {
+            console.log('📊 Firestore snapshot received, size:', snap.size);
+            console.log('📊 Snapshot change type:', snap.docChanges().map(change => `${change.type}: ${change.doc.id}`));
             const arr = [];
-            snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
-            // Normalize roles to always be an array of strings
+            snap.forEach(doc => {
+                const docData = doc.data();
+                const data = { ...docData, id: doc.id }; // Ensure Firestore doc ID takes precedence
+                console.log('📊 Job in snapshot:', doc.id, 'type of id:', typeof doc.id, data.region, data.storeType);
+                console.log('📊 Doc data id vs Firestore id:', docData.id, 'vs', doc.id);
+                arr.push(data);
+            });
+            // Normalize roles to always be an array of strings and ensure id is string
+            const oldJobCount = jobs.value.length;
             jobs.value = arr.map(j => {
             let rolesNorm = [];
             if (Array.isArray(j.roles)) rolesNorm = j.roles.filter(r => typeof r === 'string');
             else if (typeof j.roles === 'string') rolesNorm = [j.roles];
-            return { ...j, roles: rolesNorm };
+            return { ...j, roles: rolesNorm, id: String(j.id) };
             });
+            console.log('📊 Updated jobs array, old count:', oldJobCount, 'new count:', jobs.value.length);
+            console.log('📊 Current job IDs:', jobs.value.map(j => j.id));
         }, err => console.error('[Firestore] onSnapshot error', err));
         };
 
@@ -339,21 +344,45 @@ const MiniJobApp = {
         };
 
         const deleteJob = async (job) => {
+        console.log('🔥 deleteJob called with job:', job);
+        console.log('🔥 job.id:', job?.id);
+        console.log('🔥 job.id type:', typeof job?.id);
+        console.log('🔥 window.db exists?', !!window.db);
+        
         try {
-            if (!window.db) throw new Error('Firebase is not initialized');
-            if (!job || !job.id) throw new Error('Invalid job data');
+            if (!window.db) {
+                console.log('❌ Firebase not initialized');
+                throw new Error('Firebase is not initialized');
+            }
+            if (!job || !job.id) {
+                console.log('❌ Invalid job data, job:', job);
+                throw new Error('Invalid job data');
+            }
             
-            await window.db.collection('jobs').doc(job.id).delete();
+            // Ensure job.id is a string
+            const jobId = String(job.id);
+            console.log('🔥 About to delete job with ID:', jobId);
+            console.log('🔥 jobId type after String():', typeof jobId);
+            
+            const deleteResult = await window.db.collection('jobs').doc(jobId).delete();
+            console.log('✅ Delete operation completed, result:', deleteResult);
             
             modalTitle.value = 'Deleted';
             modalMessage.value = 'Job has been deleted successfully.';
             showModal.value = true;
+            console.log('✅ Modal set to show success message');
             
-            // Close the job detail panel and return to post form
+            // Close the job detail panel and stay in current context
             selectedJob.value = null;
-            currentTab.value = 'post';
+            console.log('✅ selectedJob cleared');
+            // Don't change currentTab - stay where the user was (My Jobs or Post)
         } catch (e) {
-            console.error(e);
+            console.error('❌ Delete job error:', e);
+            console.error('❌ Error details:', {
+                message: e.message,
+                code: e.code,
+                stack: e.stack
+            });
             modalTitle.value = 'Delete failed';
             modalMessage.value = 'Failed to delete job. Please try again.';
             showModal.value = true;
@@ -361,7 +390,13 @@ const MiniJobApp = {
         };
 
         const deleteSelected = () => {
-        if (!selectedJob.value) return;
+        console.log('🗑️ deleteSelected called');
+        console.log('🗑️ selectedJob.value:', selectedJob.value);
+        
+        if (!selectedJob.value) {
+            console.log('❌ No selected job, returning');
+            return;
+        }
         
         modalTitle.value = 'Confirm Delete';
         modalMessage.value = `Are you sure you want to delete this job posting?`;
@@ -369,6 +404,8 @@ const MiniJobApp = {
         
         // Set a flag to indicate this is a delete confirmation
         window.pendingDeleteJob = selectedJob.value;
+        console.log('🗑️ Set window.pendingDeleteJob to:', window.pendingDeleteJob);
+        console.log('🗑️ Modal should now be visible, showModal.value:', showModal.value);
         };
 
         const applyJob = async (job) => {
@@ -509,14 +546,25 @@ const MiniJobApp = {
         window.pendingDeleteJob = null;
         };
         const confirmAction = () => {
+        console.log('✅ confirmAction called');
+        console.log('✅ window.pendingDeleteJob:', window.pendingDeleteJob);
+        console.log('✅ role.value:', role.value);
+        console.log('✅ selectedJob.value:', selectedJob.value);
+        
         // Check if this is a delete confirmation
         if (window.pendingDeleteJob) {
+            console.log('✅ Calling deleteJob with pendingDeleteJob');
             deleteJob(window.pendingDeleteJob);
             window.pendingDeleteJob = null;
+            console.log('✅ Cleared window.pendingDeleteJob');
         } else if (role.value === 'seeker' && selectedJob.value) {
+            console.log('✅ Calling applyJob for seeker');
             applyJob(selectedJob.value);
+        } else {
+            console.log('⚠️ No action taken in confirmAction');
         }
         showModal.value = false;
+        console.log('✅ Set showModal.value to false');
         };
 
         const onLoginSuccess = () => {}; // real login removed
@@ -608,10 +656,13 @@ const MiniJobApp = {
         // Soft key click handler
         const handleSoftKeyClick = (event) => {
             const { key, action } = event.detail;
+            console.log('🎯 Soft key clicked:', key, 'showModal:', showModal.value, 'selectedJob:', !!selectedJob.value, 'role:', role.value);
             
             switch (key) {
                 case 'lsk': // Left Soft Key - Confirm
+                    console.log('🎯 LSK pressed');
                     if (showModal.value) {
+                        console.log('🎯 Modal is showing, calling confirmAction');
                         // Confirm current modal action (e.g., delete)
                         confirmAction();
                     } else if (role.value === 'seeker' && (currentTab.value === 'select-region' || currentTab.value === 'select-skill')) {
@@ -629,9 +680,12 @@ const MiniJobApp = {
                             profileRef.value.save();
                         }
                     } else if (selectedJob.value) {
+                        console.log('🎯 Job selected, role is:', role.value);
                         if (role.value === 'seeker') {
+                            console.log('🎯 Seeker - apply functionality removed');
                             // Apply functionality removed - do nothing
                         } else if (role.value === 'employer') {
+                            console.log('🎯 Employer - calling deleteSelected');
                             // Employer: LSK triggers delete confirmation
                             deleteSelected();
                         }
