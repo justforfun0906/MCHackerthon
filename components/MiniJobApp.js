@@ -208,7 +208,8 @@ const MiniJobApp = {
 
         // Filters - regions is now an array for multi-select
         const filters = reactive({ region: [], skill: '' });
-        const PREFS_KEY = 'seekerPrefs';
+    const PREFS_KEY = 'seekerPrefs';
+    const SESSION_KEY = 'appSessionV1';
         const loadPrefs = () => {
             try {
                 const raw = localStorage.getItem(PREFS_KEY);
@@ -221,6 +222,40 @@ const MiniJobApp = {
         };
         const savePrefs = () => {
             try { localStorage.setItem(PREFS_KEY, JSON.stringify({ region: filters.region, skill: filters.skill, ts: Date.now() })); } catch {}
+        };
+
+        // Session persistence
+        const buildSession = () => ({
+            ts: Date.now(),
+            mockVerified: mockVerified.value,
+            role: role.value,
+            currentTab: currentTab.value,
+            employerChoice: employerChoice.value,
+            filtersSelected: filtersSelected.value,
+            filters: { region: filters.region, skill: filters.skill },
+            selectedJobId: selectedJob.value && selectedJob.value.id ? String(selectedJob.value.id) : null
+        });
+
+        const saveSession = () => {
+            try { localStorage.setItem(SESSION_KEY, JSON.stringify(buildSession())); } catch {}
+        };
+
+        const loadSession = () => {
+            try {
+                const raw = localStorage.getItem(SESSION_KEY);
+                if (!raw) return;
+                const s = JSON.parse(raw);
+                if (!s || typeof s !== 'object') return;
+                if (typeof s.mockVerified === 'boolean') mockVerified.value = s.mockVerified;
+                if (s.role === 'seeker' || s.role === 'employer') role.value = s.role;
+                if (typeof s.currentTab === 'string') currentTab.value = s.currentTab;
+                if (s.role === 'employer' && (s.employerChoice === 'post' || s.employerChoice === 'mine')) {
+                    employerChoice.value = s.employerChoice;
+                }
+                if (typeof s.filtersSelected === 'boolean') filtersSelected.value = s.filtersSelected;
+                if (s.filters && Array.isArray(s.filters.region)) filters.region = s.filters.region;
+                if (s.filters && typeof s.filters.skill === 'string') filters.skill = s.filters.skill;
+            } catch {}
         };
         const normalizeRoles = (val) => {
         if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
@@ -821,18 +856,20 @@ const MiniJobApp = {
             }
         });
 
-        // Watch for filter changes to update soft key labels
+        // Watch for filter changes to update soft key labels and persist
         Vue.watch([() => filters.region, () => filters.skill], () => {
             savePrefs();
+            saveSession();
             updateSoftKeyLabels();
         });
 
-        // Watch for selectedJob changes to update soft key labels
+        // Watch for selectedJob changes to update soft key labels and persist
         Vue.watch(selectedJob, () => {
+            saveSession();
             updateSoftKeyLabels();
         });
 
-        // Watch for filtersSelected changes to update navigation
+        // Watch for filtersSelected changes to update navigation and persist
         Vue.watch(filtersSelected, (newValue) => {
             if (window.navigationService) {
                 // When entering job list, focus on the first job
@@ -842,6 +879,7 @@ const MiniJobApp = {
                     window.navigationService.focusFirstElement();
                 }, 200); // Increased delay to ensure DOM is fully updated
             }
+            saveSession();
         });
 
         // Function to update soft key labels
@@ -920,11 +958,26 @@ const MiniJobApp = {
         // Mirror RSK behavior
         triggerRSK();
     };
+    const flushAndSave = () => {
+        try { savePrefs(); } catch {}
+        try { saveSession(); } catch {}
+    };
+    const onVisibilityChange = () => { if (document.hidden) flushAndSave(); };
+    const onPageHide = () => { flushAndSave(); };
+    const onFreeze = () => { flushAndSave(); };
+    const onBlur = () => { flushAndSave(); };
+    const onOffline = () => { flushAndSave(); };
+    const onBeforeUnload = (e) => { try { flushAndSave(); } catch {}; };
+    let autosaveInterval = null;
     onMounted(() => {
     loadPrefs();
+        // Restore session if available
+        loadSession();
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
         startSubscribe();
+        // Start periodic autosave every 15 seconds
+        try { autosaveInterval = setInterval(flushAndSave, 15000); } catch {}
         
         // Initialize navigation
         if (window.navigationService) {
@@ -979,14 +1032,28 @@ const MiniJobApp = {
             history.pushState(null, '', location.href);
             window.addEventListener('popstate', handlePopState);
         } catch {}
+        // Lifecycle autosave hooks for interruptions (calls, backgrounding, network loss)
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('pagehide', onPageHide);
+        window.addEventListener('freeze', onFreeze);
+        window.addEventListener('blur', onBlur);
+        window.addEventListener('offline', onOffline);
+        window.addEventListener('beforeunload', onBeforeUnload);
         });
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
+            if (autosaveInterval) clearInterval(autosaveInterval);
         if (typeof unsubscribe === 'function') unsubscribe(); 
         if (window.navigationService) {
             window.navigationService.deactivate();
         }
         try { window.removeEventListener('popstate', handlePopState); } catch {}
+        try { document.removeEventListener('visibilitychange', onVisibilityChange); } catch {}
+        try { window.removeEventListener('pagehide', onPageHide); } catch {}
+        try { window.removeEventListener('freeze', onFreeze); } catch {}
+        try { window.removeEventListener('blur', onBlur); } catch {}
+        try { window.removeEventListener('offline', onOffline); } catch {}
+        try { window.removeEventListener('beforeunload', onBeforeUnload); } catch {}
         });
 
         // Helpers
