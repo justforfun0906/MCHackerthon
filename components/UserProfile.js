@@ -28,7 +28,8 @@ const UserProfile = {
     </div>
   `,
   props: {
-    userId: { type: String, required: true }
+    userId: { type: String, required: true },
+    userKey: { type: String, default: '' }
   },
   emits: ['back','saved'],
   setup(props, { emit, expose }) {
@@ -36,7 +37,7 @@ const UserProfile = {
     const form = ref({ name: '', phone: '', address: '', workExperience: '', contactOther: '' });
     const saving = ref(false);
     const message = ref('');
-    const cacheKey = computed(() => `profileCache:${props.userId || 'demo-user'}`);
+  const cacheKey = computed(() => `profileCache:${props.userKey || 'anon'}`);
     let cacheTimer = null;
 
     const loadCache = () => {
@@ -122,6 +123,15 @@ const UserProfile = {
     };
 
     onMounted(() => {
+      // Migrate legacy userId-scoped cache to userKey-scoped
+      try {
+        const legacyKey = `profileCache:${props.userId || 'demo-user'}`;
+        const legacy = localStorage.getItem(legacyKey);
+        if (legacy && !localStorage.getItem(cacheKey.value)) {
+          localStorage.setItem(cacheKey.value, legacy);
+          try { localStorage.removeItem(legacyKey); } catch {}
+        }
+      } catch {}
       // Load local cache first, then server profile
       loadCache();
       loadProfile();
@@ -137,7 +147,7 @@ const UserProfile = {
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyDown);
     });
-    watch(() => props.userId, () => { loadCache(); loadProfile(); });
+  watch(() => [props.userId, props.userKey], () => { loadCache(); loadProfile(); });
     // Debounced auto-save of drafts
     watch(form, () => {
       try { if (cacheTimer) clearTimeout(cacheTimer); } catch {}

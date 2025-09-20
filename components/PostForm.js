@@ -49,6 +49,8 @@ const PostForm = {
         </form>
     `,
     props: {
+        userId: { type: String, default: '' },
+        userKey: { type: String, default: '' },
         regions: { type: Array, default: () => [] },
         roles: { type: Array, default: () => [] },
         storeTypes: { type: Array, default: () => [] },
@@ -106,6 +108,17 @@ const PostForm = {
         }
     },
     mounted() {
+        // Scope cache key by userKey (hashed)
+        try { this.cacheKey = `postDraft:${this.userKey || 'anon'}`; } catch {}
+        // Migrate legacy userId-scoped draft to userKey-scoped
+        try {
+            const legacyKey = `postDraft:${this.userId || 'anon'}`;
+            const legacy = localStorage.getItem(legacyKey);
+            if (legacy && !localStorage.getItem(this.cacheKey)) {
+                localStorage.setItem(this.cacheKey, legacy);
+                try { localStorage.removeItem(legacyKey); } catch {}
+            }
+        } catch {}
         // Load cached draft if any
         try {
             const raw = localStorage.getItem(this.cacheKey);

@@ -8,6 +8,8 @@ const MiniJobApp = {
         
     <!-- Main Content -->
         <div class="main-content">
+            <!-- Resume banner -->
+            <div v-if="showResumeBanner" class="resume-banner">Resumed previous session</div>
             <!-- Mock Phone Verification -->
             <template v-if="!mockVerified">
             <phone-mock @verified="onMockVerified"></phone-mock>
@@ -37,7 +39,7 @@ const MiniJobApp = {
 
             <!-- Profile Page -->
             <template v-else-if="currentTab === 'profile'">
-            <user-profile ref="profileRef" :user-id="userId" @back="handleReturn" @saved="onProfileSaved" />
+            <user-profile ref="profileRef" :user-id="userId" :user-key="userKey" @back="handleReturn" @saved="onProfileSaved" />
             </template>
 
             <!-- Search Jobs -->
@@ -112,7 +114,9 @@ const MiniJobApp = {
 
             <!-- Post a Job (default view for employers) -->
             <template v-else-if="role === 'employer' && employerChoice === 'post'">
-            <post-form
+        <post-form
+            :user-id="userId"
+            :user-key="userKey"
                 :regions="regions"
                 :roles="roles"
                 :store-types="storeTypes"
@@ -192,6 +196,24 @@ const MiniJobApp = {
         const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
         const employerChoice = ref(null); // 'post' | 'mine' | null - for employer role selection
         const userId = ref('');
+        const userKey = ref('');
+
+        // Hash helpers and salt for non-PII storage keys
+        const APP_SALT = 'MCHackerthon-v1';
+        const toHex = (buffer) => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const sha256Hex = async (input) => {
+            if (!(window.crypto && window.crypto.subtle)) throw new Error('SubtleCrypto not available');
+            const data = new TextEncoder().encode(input);
+            const digest = await window.crypto.subtle.digest('SHA-256', data);
+            return toHex(digest);
+        };
+        const djb2Hex = (str) => {
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+            }
+            return (hash >>> 0).toString(16).padStart(8, '0');
+        };
 
         // Dictionaries (EN)
         const regions = ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'];
@@ -205,14 +227,17 @@ const MiniJobApp = {
         const inlineMessage = ref('');
         const applyLoading = ref(false);
         const applyingDone = ref(false);
+    const showResumeBanner = ref(false);
 
         // Filters - regions is now an array for multi-select
         const filters = reactive({ region: [], skill: '' });
-    const PREFS_KEY = 'seekerPrefs';
-    const SESSION_KEY = 'appSessionV1';
+    const PREFS_KEY_BASE = 'seekerPrefs';
+    const SESSION_KEY_BASE = 'appSessionV1'; // legacy key base
+    const ACTIVE_SESSION_KEY = 'appSessionActiveV1'; // single-entry storage
+        const prefsKey = () => `${PREFS_KEY_BASE}:${userKey.value || 'anon'}`;
         const loadPrefs = () => {
             try {
-                const raw = localStorage.getItem(PREFS_KEY);
+                const raw = localStorage.getItem(prefsKey());
                 if (raw) {
                     const obj = JSON.parse(raw);
                     if (obj && obj.region && Array.isArray(obj.region)) filters.region = obj.region;
@@ -221,12 +246,13 @@ const MiniJobApp = {
             } catch {}
         };
         const savePrefs = () => {
-            try { localStorage.setItem(PREFS_KEY, JSON.stringify({ region: filters.region, skill: filters.skill, ts: Date.now() })); } catch {}
+            try { localStorage.setItem(prefsKey(), JSON.stringify({ region: filters.region, skill: filters.skill, ts: Date.now() })); } catch {}
         };
 
         // Session persistence
         const buildSession = () => ({
             ts: Date.now(),
+            userKey: userKey.value || 'anon',
             mockVerified: mockVerified.value,
             role: role.value,
             currentTab: currentTab.value,
@@ -237,15 +263,24 @@ const MiniJobApp = {
         });
 
         const saveSession = () => {
-            try { localStorage.setItem(SESSION_KEY, JSON.stringify(buildSession())); } catch {}
+            try { 
+                localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(buildSession()));
+                // Cleanup legacy multi-session keys to reduce storage
+                try { localStorage.removeItem(SESSION_KEY_BASE); } catch {}
+                try { localStorage.removeItem(`${SESSION_KEY_BASE}:${userId.value || 'anon'}`); } catch {}
+            } catch {}
         };
 
         const loadSession = () => {
             try {
-                const raw = localStorage.getItem(SESSION_KEY);
+                const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
                 if (!raw) return;
                 const s = JSON.parse(raw);
                 if (!s || typeof s !== 'object') return;
+                // Only restore if the session belongs to this user
+                if (s.userId && s.userId !== (userId.value || 'anon')) return;
+                if (!s.userKey && s.userId && s.userId !== (userId.value || 'anon')) return;
+                if (s.userKey && s.userKey !== (userKey.value || 'anon')) return;
                 if (typeof s.mockVerified === 'boolean') mockVerified.value = s.mockVerified;
                 if (s.role === 'seeker' || s.role === 'employer') role.value = s.role;
                 if (typeof s.currentTab === 'string') currentTab.value = s.currentTab;
@@ -255,6 +290,11 @@ const MiniJobApp = {
                 if (typeof s.filtersSelected === 'boolean') filtersSelected.value = s.filtersSelected;
                 if (s.filters && Array.isArray(s.filters.region)) filters.region = s.filters.region;
                 if (s.filters && typeof s.filters.skill === 'string') filters.skill = s.filters.skill;
+                // Show resume banner
+                try {
+                    showResumeBanner.value = true;
+                    setTimeout(() => { showResumeBanner.value = false; }, 2500);
+                } catch {}
             } catch {}
         };
         const normalizeRoles = (val) => {
@@ -618,12 +658,52 @@ const MiniJobApp = {
         };
 
         const onLoginSuccess = () => {}; // real login removed
-        const onMockVerified = (payload) => { 
+        const onMockVerified = async (payload) => { 
             mockVerified.value = true; 
             try {
                 const phone = (payload && payload.phone) ? String(payload.phone) : '';
                 userId.value = phone ? `phone:${phone}` : (userId.value || 'demo-user');
             } catch { userId.value = userId.value || 'demo-user'; }
+            // Compute hashed userKey
+            try { userKey.value = await sha256Hex(`${APP_SALT}:${userId.value}`); } catch { userKey.value = djb2Hex(`${APP_SALT}:${userId.value}`); }
+            // Migrate legacy keys to single active session for this user
+            try {
+                const legacyPrefs = localStorage.getItem(PREFS_KEY_BASE);
+                if (legacyPrefs && !localStorage.getItem(prefsKey())) localStorage.setItem(prefsKey(), legacyPrefs);
+            } catch {}
+            try {
+                const legacyGlobal = localStorage.getItem(SESSION_KEY_BASE);
+                if (legacyGlobal) {
+                    const s = JSON.parse(legacyGlobal);
+                    if (s && (s.userId === (userId.value || 'anon') || s.userKey === (userKey.value || 'anon'))) localStorage.setItem(ACTIVE_SESSION_KEY, legacyGlobal);
+                    try { localStorage.removeItem(SESSION_KEY_BASE); } catch {}
+                }
+            } catch {}
+            // Migrate userId-scoped caches to userKey-scoped
+            try {
+                const oldProfile = localStorage.getItem(`profileCache:${userId.value}`);
+                if (oldProfile && !localStorage.getItem(`profileCache:${userKey.value}`)) {
+                    localStorage.setItem(`profileCache:${userKey.value}`, oldProfile);
+                    try { localStorage.removeItem(`profileCache:${userId.value}`); } catch {}
+                }
+            } catch {}
+            try {
+                const oldPost = localStorage.getItem(`postDraft:${userId.value}`);
+                if (oldPost && !localStorage.getItem(`postDraft:${userKey.value}`)) {
+                    localStorage.setItem(`postDraft:${userKey.value}`, oldPost);
+                    try { localStorage.removeItem(`postDraft:${userId.value}`); } catch {}
+                }
+            } catch {}
+            try {
+                const oldPrefs = localStorage.getItem(`${PREFS_KEY_BASE}:${userId.value}`);
+                if (oldPrefs && !localStorage.getItem(prefsKey())) {
+                    localStorage.setItem(prefsKey(), oldPrefs);
+                    try { localStorage.removeItem(`${PREFS_KEY_BASE}:${userId.value}`); } catch {}
+                }
+            } catch {}
+            // Reload active session and prefs now that userId is known
+            loadPrefs();
+            loadSession();
         };
 
         // Action handlers for new buttons
@@ -970,8 +1050,18 @@ const MiniJobApp = {
     const onBeforeUnload = (e) => { try { flushAndSave(); } catch {}; };
     let autosaveInterval = null;
     onMounted(() => {
-    loadPrefs();
-        // Restore session if available
+        // Adopt userKey early from saved session to allow pre-verification restore
+        try {
+            const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (s && typeof s.userKey === 'string' && s.userKey) {
+                    userKey.value = s.userKey;
+                }
+            }
+        } catch {}
+        // Load prefs and session immediately for testing restoration before verification
+        loadPrefs();
         loadSession();
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
@@ -1080,6 +1170,7 @@ const MiniJobApp = {
         inlineMessage,
         applyLoading,
         applyingDone,
+        showResumeBanner,
         showModal,
         modalTitle,
         modalMessage,
@@ -1090,6 +1181,7 @@ const MiniJobApp = {
         showSelectionPage,
         employerChoice,
         userId,
+    userKey,
         regions,
         roles,
         storeTypes,
