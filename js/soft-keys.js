@@ -176,6 +176,7 @@ class SoftKeys extends HTMLElement {
 
         // 右軟鍵 (RSK) - 返回
         rightKey.addEventListener("click", () => {
+            console.log('🔧 RSK button clicked in soft-keys component');
             this.dispatchEvent(
                 new CustomEvent("softkeyclick", {
                     bubbles: true,
@@ -201,10 +202,17 @@ class SoftKeys extends HTMLElement {
             const activeEl = document.activeElement;
             const isTextInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
 
+            // Debug logging for all keydown events
+            if (['SoftLeft', 'SoftRight', 'F12', 'BrowserBack', 'GoBack', 'Back', 'Backspace', 'Escape', 'Enter'].includes(e.key)) {
+                console.log(`🔧 Hardware key detected: ${e.key}, isTextInput: ${isTextInput}`);
+            }
+
             if (e.key === "SoftLeft" || e.key === "Escape") {
+                console.log('🔧 LSK hardware key triggering leftKey.click()');
                 e.preventDefault();
                 leftKey.click();
             } else if (e.key === "Enter" || e.key === " ") {
+                console.log('🔧 Center hardware key triggering centerKey.click()');
                 e.preventDefault();
                 centerKey.click();
             } else if (
@@ -215,6 +223,7 @@ class SoftKeys extends HTMLElement {
                 e.key === "Back" ||
                 (e.key === "Backspace" && !isTextInput)
             ) {
+                console.log(`🔧 RSK hardware key (${e.key}) triggering rightKey.click()`);
                 e.preventDefault();
                 rightKey.click();
             }
