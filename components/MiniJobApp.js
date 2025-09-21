@@ -8,6 +8,7 @@ const MiniJobApp = {
         
     <!-- Main Content -->
         <div class="main-content">
+            <div v-if="showResumeBanner" class="resume-banner">history resumed</div>
             <!-- Mock Phone Verification -->
             <template v-if="!mockVerified">
             <phone-mock @verified="onMockVerified"></phone-mock>
@@ -20,6 +21,7 @@ const MiniJobApp = {
                 <div class="job-list">
                 <div class="job-item" @click="chooseRole('seeker')">Find Jobs</div>
                 <div class="job-item" @click="chooseRole('employer')">I'm an Employer</div>
+                <div class="job-item" @click="logout">Logout</div>
                 </div>
             </div>
             </template>
@@ -38,7 +40,7 @@ const MiniJobApp = {
 
             <!-- Profile Page -->
             <template v-else-if="currentTab === 'profile'">
-            <user-profile ref="profileRef" :user-id="userId" @back="handleReturn" @saved="onProfileSaved" />
+            <user-profile ref="profileRef" :user-id="userId" :user-key="userKey" :load-draft="resumedFromStorage" @back="handleReturn" @saved="onProfileSaved" />
             </template>
 
             <!-- Search Jobs -->
@@ -114,11 +116,15 @@ const MiniJobApp = {
             <!-- Post a Job (default view for employers) -->
             <template v-else-if="role === 'employer' && employerChoice === 'post'">
             <post-form
+                ref="postFormRef"
                 :regions="regions"
                 :roles="roles"
                 :store-types="storeTypes"
                 :time-slots="timeSlots"
-                @submit="addJob"
+                :user-key="userKey"
+                :user-id="userId"
+                :load-draft="resumedFromStorage"
+                @submit="onPostSubmit"
             ></post-form>
             </template>
 
@@ -200,6 +206,7 @@ const MiniJobApp = {
     setup() {
     const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
     const profileRef = ref(null);
+    const postFormRef = ref(null);
 
         // State
         const mockVerified = ref(false);
@@ -208,31 +215,99 @@ const MiniJobApp = {
         const selectedJob = ref(null);
         const selectedApplicant = ref(null);
         const applications = ref([]); // Store job applications
-        const showModal = ref(false);
+    const showModal = ref(false);
         const modalTitle = ref('');
         const modalMessage = ref('');
+    const modalContext = ref(null); // 'deleteJob' | 'profileExit' | null
         const currentTime = ref('00:00');
         const filtersSelected = ref(false); // Track if region/skill filters are set
         const showSelectionPage = ref(null); // 'region' | 'skill' | null
         const selectionFlow = ref('menu'); // 'menu' | 'region' | 'skill' | 'complete'
         const employerChoice = ref(null); // 'post' | 'mine' | 'inbox' | null - for employer role selection
         const userId = ref('');
+    const userKey = ref('');
+        const showResumeBanner = ref(false);
+    const resumedFromStorage = ref(false);
 
-        // Dictionaries (EN)
+        // Hash helpers and salt for non-PII storage keys
+        const APP_SALT = 'MCHackerthon-v1';
+        const toHex = (buffer) => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const sha256Hex = async (input) => {
+            if (!(window.crypto && window.crypto.subtle)) throw new Error('SubtleCrypto not available');
+            const data = new TextEncoder().encode(input);
+            const digest = await window.crypto.subtle.digest('SHA-256', data);
+            return toHex(digest);
+        };
+        const djb2Hex = (str) => {
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+            }
+            return (hash >>> 0).toString(16).padStart(8, '0');
+        };
+
+    // Dictionaries (EN)
         const regions = ['Taipei', 'New Taipei', 'Taoyuan', 'Taichung', 'Tainan', 'Kaohsiung'];
         const roles = ['Front Desk', 'Server', 'Kitchen', 'Laborer', 'Cleaning'];
         const storeTypes = ['Food & Beverage', 'Retail', 'Service', 'Construction'];
         const timeSlots = ['Morning', 'Afternoon', 'Evening', 'Flexible'];
         const skills = roles; // skills == roles
 
-        // Firestore data
+        // Filters
+        const filters = reactive({ region: [], skill: '' });
+
+        // Session persistence (autosave)
+        const ACTIVE_SESSION_KEY = 'appSessionActiveV1';
+        const buildSession = () => ({
+            ts: Date.now(),
+            userKey: userKey.value || 'anon',
+            mockVerified: mockVerified.value,
+            role: role.value,
+            currentTab: currentTab.value,
+            employerChoice: employerChoice.value,
+            filtersSelected: filtersSelected.value,
+            filters: { region: filters.region, skill: filters.skill },
+            selectedJobId: selectedJob.value && selectedJob.value.id ? String(selectedJob.value.id) : null,
+            selectedApplicantId: selectedApplicant.value && selectedApplicant.value.id ? String(selectedApplicant.value.id) : null
+        });
+        const saveSession = () => {
+            try { localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(buildSession())); } catch {}
+        };
+        const loadSession = () => {
+            try {
+                const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
+                if (!raw) return;
+                const s = JSON.parse(raw);
+                if (!s || typeof s !== 'object') return;
+                // Only restore if userKey matches or not yet known
+                if (userKey.value && s.userKey && s.userKey !== userKey.value) return;
+                if (typeof s.mockVerified === 'boolean') mockVerified.value = s.mockVerified;
+                if (s.role === 'seeker' || s.role === 'employer') role.value = s.role;
+                if (typeof s.currentTab === 'string') currentTab.value = s.currentTab;
+                if (s.role === 'employer' && (s.employerChoice === 'post' || s.employerChoice === 'mine' || s.employerChoice === 'inbox')) {
+                    employerChoice.value = s.employerChoice;
+                }
+                if (typeof s.filtersSelected === 'boolean') filtersSelected.value = s.filtersSelected;
+                if (s.filters && Array.isArray(s.filters.region)) filters.region = s.filters.region;
+                if (s.filters && typeof s.filters.skill === 'string') filters.skill = s.filters.skill;
+                // Banner
+                try {
+                    showResumeBanner.value = true;
+                    resumedFromStorage.value = true;
+                    setTimeout(() => { showResumeBanner.value = false; }, 2500);
+                } catch {}
+            } catch {}
+        };
+
+        const flushAndSave = () => { try { saveSession(); } catch {} };
+
+    // Firestore data
         const jobs = ref([]);
         const inlineMessage = ref('');
         const applyLoading = ref(false);
         const applyingDone = ref(false);
 
-        // Filters - regions is now an array for multi-select
-        const filters = reactive({ region: [], skill: '' });
+    // Filters are defined above; no redeclare here
         const normalizeRoles = (val) => {
         if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
         if (typeof val === 'string') return [val];
@@ -400,6 +475,11 @@ const MiniJobApp = {
             modalMessage.value = 'Please check your network or Firebase configuration.';
             showModal.value = true;
         }
+        };
+
+        const onPostSubmit = async (payload) => {
+        await addJob(payload);
+        try { if (postFormRef.value && typeof postFormRef.value.clearDraftAndReset === 'function') postFormRef.value.clearDraftAndReset(); } catch {}
         };
 
         const deleteJob = async (job) => {
@@ -625,16 +705,38 @@ const MiniJobApp = {
         };
 
         const closeModal = () => { 
+        // RSK = Back to editing (cancel); do not discard
+        modalContext.value = null;
         showModal.value = false; 
         // Clean up any pending delete job
         window.pendingDeleteJob = null;
         };
-        const confirmAction = () => {
+        const confirmAction = async () => {
         console.log('✅ confirmAction called');
         console.log('✅ window.pendingDeleteJob:', window.pendingDeleteJob);
         console.log('✅ role.value:', role.value);
         console.log('✅ selectedJob.value:', selectedJob.value);
         
+        // Exit confirmation: LSK = Discard
+        if (modalContext.value === 'postExit') {
+            try { if (postFormRef.value && typeof postFormRef.value.clearDraftAndReset === 'function') postFormRef.value.clearDraftAndReset(); } catch {}
+            employerChoice.value = null;
+            modalContext.value = null;
+            showModal.value = false;
+            return;
+        }
+        if (modalContext.value === 'profileExit') {
+            try {
+                if (profileRef.value && typeof profileRef.value.clearDraftAndReload === 'function') {
+                    profileRef.value.clearDraftAndReload();
+                }
+            } catch {}
+            leaveProfileNow();
+            modalContext.value = null;
+            showModal.value = false;
+            return;
+        }
+
         // Check if this is a delete confirmation
         if (window.pendingDeleteJob) {
             console.log('✅ Calling deleteJob with pendingDeleteJob');
@@ -652,12 +754,15 @@ const MiniJobApp = {
         };
 
         const onLoginSuccess = () => {}; // real login removed
-        const onMockVerified = (payload) => { 
+        const onMockVerified = async (payload) => { 
             mockVerified.value = true; 
             try {
                 const phone = (payload && payload.phone) ? String(payload.phone) : '';
                 userId.value = phone ? `phone:${phone}` : (userId.value || 'demo-user');
             } catch { userId.value = userId.value || 'demo-user'; }
+            // Compute hashed userKey and persist
+            try { userKey.value = await sha256Hex(`${APP_SALT}:${userId.value}`); } catch { userKey.value = djb2Hex(`${APP_SALT}:${userId.value}`); }
+            saveSession();
         };
 
         // Action handlers for new buttons
@@ -676,21 +781,45 @@ const MiniJobApp = {
         }
         };
 
-        // Logout: reset session state
+        // Logout: clear saved data and reset session state
         const logout = () => {
+        try { if (window.auth && typeof window.auth.signOut === 'function') window.auth.signOut(); } catch {}
+        try { localStorage.removeItem('appSessionActiveV1'); } catch {}
+        try {
+            if (userKey && userKey.value) {
+                localStorage.removeItem(`profileCache:${userKey.value}`);
+                localStorage.removeItem(`postDraft:${userKey.value}`);
+                localStorage.removeItem(`seekerPrefs:${userKey.value}`);
+            }
+        } catch {}
         role.value = null;
         currentTab.value = 'search';
         selectedJob.value = null;
-        filters.region = '';
+        selectedApplicant.value = null;
+        filters.region = [];
         filters.skill = '';
+        filtersSelected.value = false;
         employerChoice.value = null; // Reset employer choice
         mockVerified.value = false; // back to verification screen
+        userId.value = '';
+        userKey.value = '';
+        resumedFromStorage.value = false;
         };
 
-        const onProfileSaved = (payload) => {
+    const onProfileSaved = (payload) => {
         // No global state yet; could integrate with header/user card later
         };
 
+
+        const leaveProfileNow = () => {
+        if (role.value === 'seeker') {
+            currentTab.value = 'search';
+        } else if (role.value === 'employer') {
+            currentTab.value = employerChoice.value || 'mine';
+        } else {
+            currentTab.value = 'search';
+        }
+        };
 
         const handleReturn = () => {
         // Seeker: dedicated region/skill pages
@@ -699,13 +828,19 @@ const MiniJobApp = {
             return;
         }
         if (currentTab.value === 'profile') {
-            if (role.value === 'seeker') {
-                currentTab.value = 'search';
-            } else if (role.value === 'employer') {
-                currentTab.value = employerChoice.value || 'mine';
-            } else {
-                currentTab.value = 'search';
-            }
+            // Show confirmation modal: Discard (LSK) or Back (RSK)
+            modalTitle.value = 'Leave Profile?';
+            modalMessage.value = 'Discard (LSK) or Back (RSK)';
+            modalContext.value = 'profileExit';
+            showModal.value = true;
+            return;
+        }
+        // Employer: leaving Post page
+        if (role.value === 'employer' && employerChoice.value === 'post') {
+            modalTitle.value = 'Leave Post?';
+            modalMessage.value = 'Discard (LSK) or Back (RSK)';
+            modalContext.value = 'postExit';
+            showModal.value = true;
             return;
         }
         // (Handled above) Seeker selection flow
@@ -907,6 +1042,10 @@ const MiniJobApp = {
             updateSoftKeyLabels();
         });
 
+        // Watch for modal changes to update soft key labels
+        Vue.watch(showModal, () => { updateSoftKeyLabels(); });
+        Vue.watch(modalContext, () => { updateSoftKeyLabels(); });
+
         // Watch for filtersSelected changes to update navigation
         Vue.watch(filtersSelected, (newValue) => {
             if (window.navigationService) {
@@ -923,6 +1062,14 @@ const MiniJobApp = {
         const updateSoftKeyLabels = () => {
             const softKeysElement = document.querySelector('soft-keys');
             if (softKeysElement) {
+                if (showModal.value && modalContext.value === 'postExit') {
+                    softKeysElement.updateLabels({ left: 'Discard', center: 'Enter', right: 'Back' });
+                    return;
+                }
+                if (showModal.value && modalContext.value === 'profileExit') {
+                    softKeysElement.updateLabels({ left: 'Discard', center: 'Enter', right: 'Back' });
+                    return;
+                }
                 if (currentTab.value === 'profile') {
                     softKeysElement.updateLabels({
                         left: 'Save',
@@ -1002,10 +1149,15 @@ const MiniJobApp = {
         // Mirror RSK behavior
         triggerRSK();
     };
+        let autosaveInterval = null;
         onMounted(() => {
+        // Load previously saved session early (before verification)
+        loadSession();
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
         startSubscribe();
+        // Periodic autosave every 5s
+        try { autosaveInterval = setInterval(flushAndSave, 5000); } catch {}
         
         // Initialize navigation
         if (window.navigationService) {
@@ -1063,6 +1215,7 @@ const MiniJobApp = {
         });
         onUnmounted(() => { 
         if (timeInterval) clearInterval(timeInterval); 
+            if (autosaveInterval) clearInterval(autosaveInterval);
         if (typeof unsubscribe === 'function') unsubscribe(); 
         if (typeof unsubscribeApplications === 'function') unsubscribeApplications(); 
         if (window.navigationService) {
@@ -1088,6 +1241,7 @@ const MiniJobApp = {
         // Expose
         return {
     profileRef,
+    postFormRef,
         role,
         mockVerified,
         currentTab,
@@ -1097,6 +1251,8 @@ const MiniJobApp = {
         inlineMessage,
         applyLoading,
         applyingDone,
+        showResumeBanner,
+    resumedFromStorage,
         showModal,
         modalTitle,
         modalMessage,
@@ -1106,7 +1262,8 @@ const MiniJobApp = {
         selectionFlow,
         showSelectionPage,
         employerChoice,
-        userId,
+    userId,
+    userKey,
         regions,
         roles,
         storeTypes,
@@ -1123,6 +1280,7 @@ const MiniJobApp = {
         viewApplicant,
         formatApplicationTime,
         addJob,
+    onPostSubmit,
         deleteJob,
         deleteSelected,
         applyJob,

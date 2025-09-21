@@ -28,14 +28,38 @@ const UserProfile = {
     </div>
   `,
   props: {
-    userId: { type: String, required: true }
+    userId: { type: String, required: true },
+    userKey: { type: String, default: '' },
+    loadDraft: { type: Boolean, default: true }
   },
   emits: ['back','saved'],
   setup(props, { emit, expose }) {
-    const { ref, onMounted, watch, onUnmounted, nextTick } = Vue;
+    const { ref, onMounted, watch, onUnmounted, nextTick, computed } = Vue;
   const form = ref({ name: '', phone: '', address: '', workExperience: '', contactOther: '' });
     const saving = ref(false);
     const message = ref('');
+    const cacheKey = computed(() => `profileCache:${props.userKey || 'anon'}`);
+    let cacheTimer = null;
+    const cacheTs = ref(0);
+    const hasLocalDraft = ref(false);
+
+    const loadCache = () => {
+      try {
+        const raw = localStorage.getItem(cacheKey.value);
+        if (raw) {
+          const obj = JSON.parse(raw);
+          if (obj && obj.form) {
+            form.value = { ...form.value, ...obj.form };
+            cacheTs.value = obj.ts || 0;
+            hasLocalDraft.value = true;
+          }
+        }
+      } catch {}
+    };
+    const saveCache = () => {
+      try { localStorage.setItem(cacheKey.value, JSON.stringify({ form: form.value, ts: Date.now() })); } catch {}
+    };
+  const clearCache = () => { try { localStorage.removeItem(cacheKey.value); } catch {} };
 
     const loadProfile = async () => {
       message.value = '';
@@ -47,13 +71,27 @@ const UserProfile = {
         const snap = await docRef.get();
         if (snap.exists) {
           const data = snap.data() || {};
-          form.value = {
+          const server = {
             name: data.name || '',
             phone: data.phone || '',
             address: data.address || '',
             workExperience: data.workExperience || '',
-            contactOther: data.contactOther || ''
+            contactOther: data.contactOther || '',
+            updatedAt: data.updatedAt || 0
           };
+          // Prefer newer local draft; otherwise use server
+          if (hasLocalDraft.value && (cacheTs.value >= (server.updatedAt || 0))) {
+            // Merge server (fills missing) but keep local values
+            form.value = { ...server, ...form.value };
+          } else {
+            form.value = {
+              name: server.name,
+              phone: server.phone,
+              address: server.address,
+              workExperience: server.workExperience,
+              contactOther: server.contactOther
+            };
+          }
         }
       } catch (e) {
         console.error('[UserProfile] load error', e);
@@ -99,6 +137,21 @@ const UserProfile = {
     };
 
     onMounted(() => {
+      // Migrate legacy userId-based cache to userKey key
+      try {
+        const legacyKey = `profileCache:${props.userId || 'demo-user'}`;
+        const legacy = localStorage.getItem(legacyKey);
+        if (legacy && !localStorage.getItem(cacheKey.value)) {
+          localStorage.setItem(cacheKey.value, legacy);
+          try { localStorage.removeItem(legacyKey); } catch {}
+        }
+      } catch {}
+      if (props.loadDraft) {
+        loadCache();
+      } else {
+        hasLocalDraft.value = false;
+        cacheTs.value = 0;
+      }
       loadProfile();
       document.addEventListener('keydown', handleKeyDown);
       // Focus the first input for immediate editing
@@ -112,9 +165,25 @@ const UserProfile = {
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyDown);
     });
-    watch(() => props.userId, () => loadProfile());
+    watch(() => [props.userId, props.userKey, props.loadDraft], () => {
+      if (props.loadDraft) {
+        loadCache();
+      } else {
+        hasLocalDraft.value = false;
+        cacheTs.value = 0;
+      }
+      loadProfile();
+    });
+    // Debounced draft caching while editing
+    watch(form, () => {
+      try { if (cacheTimer) clearTimeout(cacheTimer); } catch {}
+      cacheTimer = setTimeout(saveCache, 300);
+    }, { deep: true });
 
-    expose({ save });
+    const clearDraft = () => { clearCache(); };
+    const clearDraftAndReload = () => { clearCache(); loadProfile(); };
+
+    expose({ save, clearDraft, clearDraftAndReload });
     return { form, saving, message, save };
   }
 };
