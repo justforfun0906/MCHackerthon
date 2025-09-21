@@ -41,12 +41,14 @@ class NavigationService {
                     this.handleHorizontalMove(1);
                     break;
                 case 'Enter':
-                    // Don't intercept Enter in selection pages - let SelectionPage handle it
-                    const isInSelectionPage = document.querySelector('.selection-page') !== null;
-                    if (!isInSelectionPage) {
-                        event.preventDefault();
-                        this.handleEnter();
+                    // Only prevent Enter in text inputs when they have content to submit
+                    // Allow Enter to work normally in selection pages and other contexts
+                    if (isTextInput) {
+                        // Let text inputs handle Enter normally
+                        return;
                     }
+                    event.preventDefault();
+                    this.handleEnter();
                     break;
                 case 'Escape':
                     event.preventDefault();
@@ -204,11 +206,13 @@ class NavigationService {
     }
     
     handleEnter() {
+        // First, try to click the currently focused element
         if (this.currentFocusIndex >= 0 && this.currentFocusIndex < this.focusableElements.length) {
             const element = this.focusableElements[this.currentFocusIndex];
             element.click();
         }
         
+        // Then, call the callback if it exists
         if (this.onEnterCallback) {
             this.onEnterCallback();
         }
