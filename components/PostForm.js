@@ -101,6 +101,18 @@ const PostForm = {
         };
     },
     methods: {
+        discard() {
+            try { localStorage.removeItem(this.cacheKey); } catch {}
+            this.form = {
+                region: '',
+                storeType: '',
+                address: '',
+                role: '',
+                time: '',
+                count: 1,
+                note: ''
+            };
+        },
         handleSelectKeydown(event) {
             if (event.key === 'Enter') {
                 event.preventDefault();

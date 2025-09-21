@@ -20,6 +20,8 @@ const MiniJobApp = {
                 <div class="job-list">
                 <div class="job-item" @click="chooseRole('seeker')">Find Jobs</div>
                 <div class="job-item" @click="chooseRole('employer')">I'm an Employer</div>
+                <!-- Logout on choosing-role page -->
+                <div class="job-item" @click="logout">Logout</div>
                 </div>
             </div>
             </template>
@@ -114,6 +116,7 @@ const MiniJobApp = {
             <!-- Post a Job (default view for employers) -->
             <template v-else-if="role === 'employer' && employerChoice === 'post'">
             <post-form
+                ref="postFormRef"
                 :regions="regions"
                 :roles="roles"
                 :store-types="storeTypes"
@@ -200,6 +203,7 @@ const MiniJobApp = {
     setup() {
     const { ref, reactive, computed, onMounted, onUnmounted } = Vue;
     const profileRef = ref(null);
+    const postFormRef = ref(null);
 
         // State
         const mockVerified = ref(false);
@@ -225,13 +229,13 @@ const MiniJobApp = {
         const timeSlots = ['Morning', 'Afternoon', 'Evening', 'Flexible'];
         const skills = roles; // skills == roles
 
-        // Firestore data
+    // Firestore data
         const jobs = ref([]);
         const inlineMessage = ref('');
         const applyLoading = ref(false);
         const applyingDone = ref(false);
 
-        // Filters - regions is now an array for multi-select
+    // Filters - regions is now an array for multi-select
         const filters = reactive({ region: [], skill: '' });
         const normalizeRoles = (val) => {
         if (Array.isArray(val)) return val.filter(r => typeof r === 'string');
@@ -287,6 +291,50 @@ const MiniJobApp = {
         });
 
 
+        // Autosave: keys and pending restoration flags
+        const APP_STATE_KEY = 'appState:v1';
+        let saveTimer = null;
+        const pendingSelectedJobId = ref(null);
+        const pendingSelectedApplicantId = ref(null);
+
+        const saveAppState = () => {
+        try {
+            const payload = {
+            mockVerified: !!mockVerified.value,
+            role: role.value || null,
+            currentTab: currentTab.value || 'search',
+            employerChoice: employerChoice.value || null,
+            filters: { region: Array.isArray(filters.region) ? filters.region.slice(0) : [], skill: filters.skill || '' },
+            filtersSelected: !!filtersSelected.value,
+            selectedJobId: selectedJob.value && selectedJob.value.id ? String(selectedJob.value.id) : null,
+            selectedApplicantId: selectedApplicant.value && selectedApplicant.value.id ? String(selectedApplicant.value.id) : null,
+            ts: Date.now()
+            };
+            localStorage.setItem(APP_STATE_KEY, JSON.stringify(payload));
+        } catch {}
+        };
+        const scheduleSave = () => {
+        try { if (saveTimer) clearTimeout(saveTimer); } catch {}
+        saveTimer = setTimeout(saveAppState, 200);
+        };
+        const loadAppState = () => {
+        try {
+            const raw = localStorage.getItem(APP_STATE_KEY);
+            if (!raw) return;
+            const obj = JSON.parse(raw);
+            if (!obj || typeof obj !== 'object') return;
+            if (typeof obj.mockVerified === 'boolean') mockVerified.value = obj.mockVerified;
+            if (obj.role) role.value = obj.role;
+            if (obj.currentTab) currentTab.value = obj.currentTab;
+            if (obj.employerChoice) employerChoice.value = obj.employerChoice;
+            if (obj.filters && obj.filters.region) filters.region = Array.isArray(obj.filters.region) ? obj.filters.region.slice(0) : [];
+            if (obj.filters && typeof obj.filters.skill === 'string') filters.skill = obj.filters.skill;
+            if (typeof obj.filtersSelected === 'boolean') filtersSelected.value = obj.filtersSelected;
+            pendingSelectedJobId.value = obj.selectedJobId || null;
+            pendingSelectedApplicantId.value = obj.selectedApplicantId || null;
+        } catch {}
+        };
+
         // Firestore subscribe
         let unsubscribe = null;
         let unsubscribeApplications = null;
@@ -321,6 +369,17 @@ const MiniJobApp = {
             });
             console.log('📊 Updated jobs array, old count:', oldJobCount, 'new count:', jobs.value.length);
             console.log('📊 Current job IDs:', jobs.value.map(j => j.id));
+
+            // Restore previously selected job if any
+            try {
+            if (pendingSelectedJobId.value && !selectedJob.value) {
+                const found = jobs.value.find(j => String(j.id) === String(pendingSelectedJobId.value));
+                if (found) {
+                viewJob(found);
+                pendingSelectedJobId.value = null;
+                }
+            }
+            } catch {}
         }, err => console.error('[Firestore] onSnapshot error', err));
         
         // Subscribe to applications
@@ -334,6 +393,17 @@ const MiniJobApp = {
             });
             applications.value = arr;
             console.log('📨 Updated applications array, count:', applications.value.length);
+
+            // Restore previously selected applicant if any
+            try {
+            if (pendingSelectedApplicantId.value && !selectedApplicant.value) {
+                const found = applications.value.find(a => String(a.id) === String(pendingSelectedApplicantId.value));
+                if (found) {
+                viewApplicant(found);
+                pendingSelectedApplicantId.value = null;
+                }
+            }
+            } catch {}
         }, err => console.error('[Firestore] applications onSnapshot error', err));
         };
 
@@ -658,6 +728,8 @@ const MiniJobApp = {
                 const phone = (payload && payload.phone) ? String(payload.phone) : '';
                 userId.value = phone ? `phone:${phone}` : (userId.value || 'demo-user');
             } catch { userId.value = userId.value || 'demo-user'; }
+            // Ensure Firestore subscriptions are active after re-verification
+            try { if (!unsubscribe) startSubscribe(); } catch {}
         };
 
         // Action handlers for new buttons
@@ -677,14 +749,46 @@ const MiniJobApp = {
         };
 
         // Logout: reset session state
-        const logout = () => {
+        const logout = async () => {
+        try {
+            if (window.auth && typeof window.auth.signOut === 'function') {
+            await window.auth.signOut();
+            }
+        } catch (e) {
+            console.warn('[Logout] Firebase signOut failed or unavailable:', e && e.message);
+        }
+        try {
+            localStorage.clear();
+        } catch {}
+
+        try { if (typeof unsubscribe === 'function') { unsubscribe(); unsubscribe = null; } } catch {}
+        try { if (typeof unsubscribeApplications === 'function') { unsubscribeApplications(); unsubscribeApplications = null; } } catch {}
+
+        // Reset in-memory state
         role.value = null;
+        employerChoice.value = null;
         currentTab.value = 'search';
         selectedJob.value = null;
-        filters.region = '';
+        selectedApplicant.value = null;
+        jobs.value = [];
+        applications.value = [];
+        filters.region = [];
         filters.skill = '';
-        employerChoice.value = null; // Reset employer choice
-        mockVerified.value = false; // back to verification screen
+        filtersSelected.value = false;
+        inlineMessage.value = '';
+        showModal.value = false;
+        applyingDone.value = false;
+        userId.value = '';
+        // Return to verification screen
+        mockVerified.value = false;
+
+        // Refresh focus/navigation
+        if (window.navigationService) {
+            setTimeout(() => {
+            window.navigationService.updateFocusableElements();
+            window.navigationService.focusFirstElement && window.navigationService.focusFirstElement();
+            }, 150);
+        }
         };
 
         const onProfileSaved = (payload) => {
@@ -699,6 +803,7 @@ const MiniJobApp = {
             return;
         }
         if (currentTab.value === 'profile') {
+            try { if (profileRef.value && typeof profileRef.value.discard === 'function') profileRef.value.discard(); } catch {}
             if (role.value === 'seeker') {
                 currentTab.value = 'search';
             } else if (role.value === 'employer') {
@@ -723,6 +828,9 @@ const MiniJobApp = {
             // Return from job listing to filter selection page
             backToFilterSelection();
         } else if (role.value === 'employer' && employerChoice.value) {
+            if (currentTab.value === 'post') {
+            try { if (postFormRef.value && typeof postFormRef.value.discard === 'function') postFormRef.value.discard(); } catch {}
+            }
             // Return from employer action to employer choice selection
             employerChoice.value = null;
         } else {
@@ -1003,6 +1111,8 @@ const MiniJobApp = {
         triggerRSK();
     };
         onMounted(() => {
+    // Restore previous session if present
+    loadAppState();
         updateTime();
         timeInterval = setInterval(updateTime, 1000);
         startSubscribe();
@@ -1071,6 +1181,16 @@ const MiniJobApp = {
         try { window.removeEventListener('popstate', handlePopState); } catch {}
         });
 
+        // Save on critical state changes
+        Vue.watch([mockVerified, role, currentTab, employerChoice, () => filters.region, () => filters.skill, filtersSelected, selectedJob, selectedApplicant], () => {
+            scheduleSave();
+        }, { deep: true });
+
+        // Save on unload
+        try {
+        window.addEventListener('beforeunload', saveAppState);
+        } catch {}
+
         // Helpers
         const openProfile = () => { 
             currentTab.value = 'profile'; 
@@ -1085,9 +1205,10 @@ const MiniJobApp = {
             }, 150);
         };
 
-        // Expose
+    // Expose
         return {
     profileRef,
+        postFormRef,
         role,
         mockVerified,
         currentTab,

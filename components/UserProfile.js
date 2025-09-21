@@ -36,6 +36,8 @@ const UserProfile = {
   const form = ref({ name: '', phone: '', address: '', workExperience: '', contactOther: '' });
     const saving = ref(false);
     const message = ref('');
+    const DRAFT_KEY = ref('');
+    let draftTimer = null;
 
     const loadProfile = async () => {
       message.value = '';
@@ -55,6 +57,16 @@ const UserProfile = {
             contactOther: data.contactOther || ''
           };
         }
+        // After loading from Firestore, overlay any local draft
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY.value);
+          if (raw) {
+            const obj = JSON.parse(raw);
+            if (obj && obj.form) {
+              form.value = { ...form.value, ...obj.form };
+            }
+          }
+        } catch {}
       } catch (e) {
         console.error('[UserProfile] load error', e);
         message.value = 'Failed to load profile.';
@@ -79,12 +91,19 @@ const UserProfile = {
         await window.db.collection('users').doc(props.userId).set(payload, { merge: true });
         message.value = 'Profile saved!';
         emit('saved', payload);
+        // Clear local draft on successful save
+        try { localStorage.removeItem(DRAFT_KEY.value); } catch {}
       } catch (e) {
         console.error('[UserProfile] save error', e);
         message.value = 'Failed to save profile.';
       } finally {
         saving.value = false;
       }
+    };
+
+    const discard = async () => {
+      try { localStorage.removeItem(DRAFT_KEY.value); } catch {}
+      try { await loadProfile(); } catch {}
     };
 
     const handleKeyDown = (e) => {
@@ -99,6 +118,7 @@ const UserProfile = {
     };
 
     onMounted(() => {
+      try { DRAFT_KEY.value = `profileDraft:${props.userId || 'anon'}`; } catch {}
       loadProfile();
       document.addEventListener('keydown', handleKeyDown);
       // Focus the first input for immediate editing
@@ -111,10 +131,19 @@ const UserProfile = {
     });
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyDown);
+      try { if (draftTimer) clearTimeout(draftTimer); } catch {}
     });
     watch(() => props.userId, () => loadProfile());
 
-    expose({ save });
-    return { form, saving, message, save };
+    // Debounced autosave of profile draft
+    watch(form, () => {
+      try { if (draftTimer) clearTimeout(draftTimer); } catch {}
+      draftTimer = setTimeout(() => {
+        try { localStorage.setItem(DRAFT_KEY.value, JSON.stringify({ form: form.value, ts: Date.now() })); } catch {}
+      }, 300);
+    }, { deep: true });
+
+    expose({ save, discard });
+    return { form, saving, message, save, discard };
   }
 };
