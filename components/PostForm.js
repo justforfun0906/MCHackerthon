@@ -1,69 +1,79 @@
 // PostForm Component (EN version)
 const PostForm = {
     template: `
-        <form class="post-form" @submit.prevent="onSubmit">
-            <div class="field-row">
-                <label>Region</label>
-                <select v-model="form.region" required class="region-select" @keydown="handleSelectKeydown" ref="regionSelect">
-                    <option value="" disabled>Select</option>
-                    <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
-                </select>
+        <div>
+            <form class="post-form" @submit.prevent="onSubmit">
+                <div class="field-row">
+                    <label>Region</label>
+                    <select v-model="form.region" required class="region-select" @keydown="handleSelectKeydown" ref="regionSelect">
+                        <option value="" disabled>Select</option>
+                        <option v-for="r in regions" :key="r" :value="r">{{ r }}</option>
+                    </select>
+                </div>
+                <div class="field-row">
+                    <label>Store Type</label>
+                    <select v-model="form.storeType" required class="store-type-select" @keydown="handleSelectKeydown" ref="storeTypeSelect">
+                        <option value="" disabled>Select</option>
+                        <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
+                    </select>
+                </div>
+                <div class="field-row">
+                    <label>Address</label>
+                    <input 
+                        type="text" 
+                        v-model="form.address" 
+                        placeholder="Enter address" 
+                        class="address-input"
+                        @input="handleAddressInput"
+                    />
+                </div>
+                <div class="field-row">
+                    <label>Role</label>
+                    <select v-model="form.role" required class="role-select" @keydown="handleSelectKeydown" ref="roleSelect">
+                        <option value="" disabled>Select Role</option>
+                        <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
+                    </select>
+                </div>
+                <div class="field-row">
+                    <label>Time Slot</label>
+                    <select v-model="form.time" required class="time-select" @keydown="handleSelectKeydown" ref="timeSelect">
+                        <option value="" disabled>Select</option>
+                        <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
+                    </select>
+                </div>
+                <div class="field-row">
+                    <label>Openings</label>
+                    <input 
+                        type="number" 
+                        v-model.number="form.count" 
+                        min="1" 
+                        max="20" 
+                        required 
+                        class="count-input"
+                        @input="handleCountInput"
+                    />
+                </div>
+                <div class="field-row">
+                    <label>Notes</label>
+                    <textarea 
+                        v-model="form.note" 
+                        placeholder="Enter job notes..." 
+                        rows="3" 
+                        class="note-textarea"
+                        @input="handleTextareaInput"
+                        @keydown="handleTextareaKeydown"
+                    ></textarea>
+                </div>
+            </form>
+            
+            <!-- Success Modal -->
+            <div v-if="showSuccessModal" class="success-modal-overlay">
+                <div class="success-modal">
+                    <div class="success-icon">✓</div>
+                    <div class="success-message">Job Posted Successfully!</div>
+                </div>
             </div>
-            <div class="field-row">
-                <label>Store Type</label>
-                <select v-model="form.storeType" required class="store-type-select" @keydown="handleSelectKeydown" ref="storeTypeSelect">
-                    <option value="" disabled>Select</option>
-                    <option v-for="t in storeTypes" :key="t" :value="t">{{ t }}</option>
-                </select>
-            </div>
-            <div class="field-row">
-                <label>Address</label>
-                <input 
-                    type="text" 
-                    v-model="form.address" 
-                    placeholder="Enter address" 
-                    class="address-input"
-                    @input="handleAddressInput"
-                />
-            </div>
-            <div class="field-row">
-                <label>Role</label>
-                <select v-model="form.role" required class="role-select" @keydown="handleSelectKeydown" ref="roleSelect">
-                    <option value="" disabled>Select Role</option>
-                    <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
-                </select>
-            </div>
-            <div class="field-row">
-                <label>Time Slot</label>
-                <select v-model="form.time" required class="time-select" @keydown="handleSelectKeydown" ref="timeSelect">
-                    <option value="" disabled>Select</option>
-                    <option v-for="t in timeSlots" :key="t" :value="t">{{ t }}</option>
-                </select>
-            </div>
-            <div class="field-row">
-                <label>Openings</label>
-                <input 
-                    type="number" 
-                    v-model.number="form.count" 
-                    min="1" 
-                    max="20" 
-                    required 
-                    class="count-input"
-                    @input="handleCountInput"
-                />
-            </div>
-            <div class="field-row">
-                <label>Notes</label>
-                <textarea 
-                    v-model="form.note" 
-                    placeholder="Enter job notes..." 
-                    rows="3" 
-                    class="note-textarea"
-                    @input="handleTextareaInput"
-                    @keydown="handleTextareaKeydown"
-                ></textarea>
-            </div>
-        </form>
+        </div>
     `,
     props: {
         userId: { type: String, default: '' },
@@ -86,7 +96,8 @@ const PostForm = {
                 note: ''
             },
             cacheKey: 'postDraft',
-            cacheTimer: null
+            cacheTimer: null,
+            showSuccessModal: false
         };
     },
     methods: {
@@ -140,14 +151,34 @@ const PostForm = {
             this.$emit('submit', payload);
             // Clear cache on successful submit
             try { localStorage.removeItem(this.cacheKey); } catch {}
-            // reset form
-            this.form.region = '';
-            this.form.storeType = '';
-            this.form.address = '';
-            this.form.role = '';
-            this.form.time = '';
-            this.form.count = 1;
-            this.form.note = '';
+            
+            // Show success modal
+            this.showSuccessModal = true;
+            
+            // Reset form and navigate back after modal delay
+            setTimeout(() => {
+                // Reset form
+                this.form.region = '';
+                this.form.storeType = '';
+                this.form.address = '';
+                this.form.role = '';
+                this.form.time = '';
+                this.form.count = 1;
+                this.form.note = '';
+                
+                // Hide modal
+                this.showSuccessModal = false;
+                
+                // Navigate back to previous page
+                setTimeout(() => {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        // Fallback: emit a navigation event for parent to handle
+                        this.$emit('navigate-back');
+                    }
+                }, 100);
+            }, 1500); // Show modal for 1.5 seconds
         }
     },
     mounted() {
@@ -179,5 +210,34 @@ const PostForm = {
                 try { localStorage.setItem(this.cacheKey, JSON.stringify({ form: this.form, ts: Date.now() })); } catch {}
             }, 300);
         }, { deep: true });
+
+        // Bind navigation service callbacks for soft key handling
+        if (window.navigationService) {
+            window.navigationService.setCallbacks({
+                onEscape: () => this.handleConfirm(), // LSK (Escape) triggers submit
+                onBack: () => {
+                    // RSK (Back) - you might want to emit a cancel event
+                    this.$emit('cancel');
+                },
+                onEnter: () => {
+                    // Center key - handled automatically by navigation service
+                }
+            });
+            
+            // Activate navigation for this form
+            window.navigationService.activate();
+        }
+    },
+    
+    beforeUnmount() {
+        // Clean up navigation callbacks when component is destroyed
+        if (window.navigationService) {
+            window.navigationService.setCallbacks({
+                onEscape: null,
+                onBack: null,
+                onEnter: null
+            });
+            window.navigationService.deactivate();
+        }
     }
 };
