@@ -68,7 +68,7 @@ class NavigationService {
         });
         
         // Handle back event for Right Soft Key
-        window.addEventListener('back', (event) => {
+        window.addEventListener('popstate', (event) => {
             if (this.onBackCallback) {
                 event.preventDefault();
                 this.onBackCallback();
