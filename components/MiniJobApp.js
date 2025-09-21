@@ -458,7 +458,16 @@ const MiniJobApp = {
         const addJob = async (payload) => {
         try {
             if (!window.db) throw new Error('Firebase is not initialized');
-            const docData = { ...payload, createdAt: Date.now() };
+            
+            // Convert single role to roles array for consistent data structure
+            const docData = { 
+                ...payload, 
+                roles: payload.role ? [payload.role] : [], // Convert role string to roles array
+                createdAt: Date.now() 
+            };
+            // Remove the single role field since we're using roles array
+            delete docData.role;
+            
             await window.db.collection('jobs').add(docData);
             modalTitle.value = 'Posted';
             modalMessage.value = 'Your job has been published.';
