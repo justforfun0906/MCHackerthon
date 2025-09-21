@@ -210,9 +210,15 @@ const PostForm = {
                 try { localStorage.setItem(this.cacheKey, JSON.stringify({ form: this.form, ts: Date.now() })); } catch {}
             }, 300);
         }, { deep: true });
-
-        // Bind navigation service callbacks for soft key handling
+        
+        // Store the original callbacks before overriding them
         if (window.navigationService) {
+            this.originalCallbacks = {
+                onEscape: window.navigationService.onEscapeCallback,
+                onBack: window.navigationService.onBackCallback,
+                onEnter: window.navigationService.onEnterCallback
+            };
+            
             window.navigationService.setCallbacks({
                 onEscape: () => this.handleConfirm(), // LSK (Escape) triggers submit
                 onBack: () => {
@@ -230,14 +236,16 @@ const PostForm = {
     },
     
     beforeUnmount() {
-        // Clean up navigation callbacks when component is destroyed
-        if (window.navigationService) {
+        // Restore the original navigation callbacks when component is destroyed
+        if (window.navigationService && this.originalCallbacks) {
+            window.navigationService.setCallbacks(this.originalCallbacks);
+        } else if (window.navigationService) {
+            // Fallback: clear callbacks if no original callbacks were stored
             window.navigationService.setCallbacks({
                 onEscape: null,
                 onBack: null,
                 onEnter: null
             });
-            window.navigationService.deactivate();
         }
     }
 };
